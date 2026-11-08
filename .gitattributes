@@ -1,0 +1,18 @@
+# 统一换行符与二进制标记，避免组员之间出现无意义的整文件 diff
+* text=auto
+
+# Windows 批处理必须 CRLF
+*.bat text eol=crlf
+
+# 二进制（Git 不做行尾转换、不生成文本 diff）
+*.jar binary
+*.docx binary
+*.db  binary
+
+# 文本（统一 LF）
+*.md    text eol=lf
+*.sql   text eol=lf
+*.java  text eol=lf
+*.xml   text eol=lf
+*.drawio text eol=lf
+*.py    text eol=lf

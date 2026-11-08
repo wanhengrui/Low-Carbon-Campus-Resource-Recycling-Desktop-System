@@ -1,0 +1,368 @@
+
+==============================================================================
+D5 数据库脚本实跑验证报告
+==============================================================================
+验证时间：2026-11-02 15:53:29
+Python  ：3.12.14 (main, Sep  1 2026, 14:17:39) [MSC v.1944 64 bit (AMD64)]
+sqlite3 ：3.53.1（sqlite3 模块 2.6.0）
+工作库  ：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\db\_verify\greencampus.db
+脚本    ：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\db\schema.sql
+脚本    ：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\db\seed-data.sql
+
+【执行 schema.sql 建库】C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\db\schema.sql
+  执行成功，语句逐条通过，未产生 SQLException/SyntaxError。
+
+==============================================================================
+1. 建表结果（SELECT name FROM sqlite_master WHERE type='table'）
+==============================================================================
+   1. category
+   2. credit_log
+   3. favorite
+   4. item
+   5. item_image
+   6. operation_log
+   7. review
+   8. system_config
+   9. trade_flow
+  10. trade_message
+  11. user
+  表数量：11（期望 11）
+  缺失表：无
+  多余表：无
+
+==============================================================================
+2. 完整性检查（PRAGMA integrity_check）
+==============================================================================
+  [('ok',)]
+
+==============================================================================
+3. 外键检查（PRAGMA foreign_key_check，建表后/空库）
+==============================================================================
+  结果：[] 无违反（空列表即无违反）
+
+==============================================================================
+4. schema 结构快照（空库）
+==============================================================================
+
+【各表字段数与行数】
+表名                  字段数     行数       主键  字段清单（名称:类型 非空/默认）
+----------------------------------------------------------------------------------------------------------------------
+category              6      0       id  id:INTEGER/PK; name:TEXT/NOT NULL; parent_id:INTEGER; sort_order:INTEGER/NOT NULL/DEFAULT 0; enabled:INTEGER/NOT NULL/DEFAULT 1; created_at:TEXT/NOT NULL
+credit_log            7      0       id  id:INTEGER/PK; user_id:INTEGER/NOT NULL; flow_id:INTEGER; delta:INTEGER/NOT NULL; score_after:INTEGER/NOT NULL; reason:TEXT/NOT NULL; created_at:TEXT/NOT NULL
+favorite              4      0       id  id:INTEGER/PK; user_id:INTEGER/NOT NULL; item_id:INTEGER/NOT NULL; created_at:TEXT/NOT NULL
+item                 17      0       id  id:INTEGER/PK; owner_id:INTEGER/NOT NULL; category_id:INTEGER/NOT NULL; title:TEXT/NOT NULL; description:TEXT/NOT NULL; trade_type:TEXT/NOT NULL; price:REAL/NOT NULL/DEFAULT 0; original_price:REAL; condition_level:INTEGER/NOT NULL/DEFAULT 9; tags:TEXT; status:TEXT/NOT NULL/DEFAULT 'PENDING'; view_count:INTEGER/NOT NULL/DEFAULT 0; favorite_count:INTEGER/NOT NULL/DEFAULT 0; audit_remark:TEXT; created_at:TEXT/NOT NULL; updated_at:TEXT/NOT NULL; published_at:TEXT
+item_image            5      0       id  id:INTEGER/PK; item_id:INTEGER/NOT NULL; file_path:TEXT/NOT NULL; sort_order:INTEGER/NOT NULL/DEFAULT 0; created_at:TEXT/NOT NULL
+operation_log         8      0       id  id:INTEGER/PK; operator_id:INTEGER; operation:TEXT/NOT NULL; target_type:TEXT; target_id:INTEGER; detail:TEXT; ip:TEXT; created_at:TEXT/NOT NULL
+review                7      0       id  id:INTEGER/PK; flow_id:INTEGER/NOT NULL; reviewer_id:INTEGER/NOT NULL; reviewee_id:INTEGER/NOT NULL; score:INTEGER/NOT NULL; content:TEXT; created_at:TEXT/NOT NULL
+system_config         5      0       id  id:INTEGER/PK; config_key:TEXT/NOT NULL; config_value:TEXT/NOT NULL; description:TEXT; updated_at:TEXT/NOT NULL
+trade_flow           11      0       id  id:INTEGER/PK; item_id:INTEGER/NOT NULL; seller_id:INTEGER/NOT NULL; buyer_id:INTEGER/NOT NULL; flow_type:TEXT/NOT NULL; amount:REAL/NOT NULL/DEFAULT 0; status:TEXT/NOT NULL/DEFAULT 'APPLYING'; apply_remark:TEXT; cancel_reason:TEXT; created_at:TEXT/NOT NULL; finished_at:TEXT
+trade_message         7      0       id  id:INTEGER/PK; item_id:INTEGER/NOT NULL; from_user_id:INTEGER/NOT NULL; to_user_id:INTEGER/NOT NULL; content:TEXT/NOT NULL; is_read:INTEGER/NOT NULL/DEFAULT 0; created_at:TEXT/NOT NULL
+user                 16      0       id  id:INTEGER/PK; username:TEXT/NOT NULL; password_hash:TEXT/NOT NULL; salt:TEXT/NOT NULL; real_name:TEXT/NOT NULL; student_no:TEXT; role:TEXT/NOT NULL/DEFAULT 'STUDENT'; college:TEXT; contact:TEXT; credit_score:INTEGER/NOT NULL/DEFAULT 100; status:TEXT/NOT NULL/DEFAULT 'ACTIVE'; fail_count:INTEGER/NOT NULL/DEFAULT 0; locked_until:TEXT; created_at:TEXT/NOT NULL; updated_at:TEXT/NOT NULL; last_login_at:TEXT
+
+【索引清单】
+  uq_category_root_name    on category       [PARTIAL UNIQUE INDEX]  CREATE UNIQUE INDEX uq_category_root_name ON category(name) WHERE parent_id IS NULL
+  idx_credit_user          on credit_log     [INDEX]  CREATE INDEX idx_credit_user ON credit_log(user_id, created_at)
+  idx_favorite_user        on favorite       [INDEX]  CREATE INDEX idx_favorite_user ON favorite(user_id)
+  idx_item_owner           on item           [INDEX]  CREATE INDEX idx_item_owner ON item(owner_id)
+  idx_item_status_category on item           [INDEX]  CREATE INDEX idx_item_status_category ON item(status, category_id)
+  idx_item_title           on item           [INDEX]  CREATE INDEX idx_item_title ON item(title)
+  idx_item_image_item      on item_image     [INDEX]  CREATE INDEX idx_item_image_item ON item_image(item_id, sort_order)
+  idx_oplog_operator       on operation_log  [INDEX]  CREATE INDEX idx_oplog_operator ON operation_log(operator_id, created_at)
+  idx_review_reviewee      on review         [INDEX]  CREATE INDEX idx_review_reviewee ON review(reviewee_id)
+  idx_flow_buyer           on trade_flow     [INDEX]  CREATE INDEX idx_flow_buyer ON trade_flow(buyer_id)
+  idx_flow_seller          on trade_flow     [INDEX]  CREATE INDEX idx_flow_seller ON trade_flow(seller_id)
+  uq_flow_item_active      on trade_flow     [PARTIAL UNIQUE INDEX]  CREATE UNIQUE INDEX uq_flow_item_active ON trade_flow(item_id) WHERE status IN ('APPLYING','AGREED')
+  idx_msg_pair             on trade_message  [INDEX]  CREATE INDEX idx_msg_pair ON trade_message(from_user_id, to_user_id, item_id)
+  索引数量（不含 sqlite_autoindex）：13
+
+【外键清单（PRAGMA foreign_key_list）】
+  category      .parent_id      -> category      .id           ON UPDATE CASCADE   ON DELETE RESTRICT
+  credit_log    .flow_id        -> trade_flow    .id           ON UPDATE CASCADE   ON DELETE SET NULL
+  credit_log    .user_id        -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  favorite      .item_id        -> item          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  favorite      .user_id        -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  item          .category_id    -> category      .id           ON UPDATE CASCADE   ON DELETE RESTRICT
+  item          .owner_id       -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  item_image    .item_id        -> item          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  operation_log .operator_id    -> user          .id           ON UPDATE CASCADE   ON DELETE SET NULL
+  review        .reviewee_id    -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  review        .reviewer_id    -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  review        .flow_id        -> trade_flow    .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  trade_flow    .buyer_id       -> user          .id           ON UPDATE CASCADE   ON DELETE RESTRICT
+  trade_flow    .seller_id      -> user          .id           ON UPDATE CASCADE   ON DELETE RESTRICT
+  trade_flow    .item_id        -> item          .id           ON UPDATE CASCADE   ON DELETE RESTRICT
+  trade_message .to_user_id     -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  trade_message .from_user_id   -> user          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  trade_message .item_id        -> item          .id           ON UPDATE CASCADE   ON DELETE CASCADE
+  外键约束总数：18
+
+【执行 seed-data.sql 导入】C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\db\seed-data.sql
+  执行成功，语句逐条通过，未产生 SQLException/SyntaxError。
+
+==============================================================================
+5. 导入种子数据后的状态
+==============================================================================
+  行数统计：
+    category         10
+    credit_log       5
+    favorite         6
+    item             12
+    item_image       7
+    operation_log    7
+    review           3
+    system_config    11
+    trade_flow       4
+    trade_message    6
+    user             5
+
+  期望下限核对：
+    user             实际   5 条 / 要求 >=  5 条  OK
+    category         实际  10 条 / 要求 >=  8 条  OK
+    item             实际  12 条 / 要求 >= 10 条  OK
+    item_image       实际   7 条 / 要求 >=  5 条  OK
+    favorite         实际   6 条 / 要求 >=  5 条  OK
+    trade_message    实际   6 条 / 要求 >=  5 条  OK
+    trade_flow       实际   4 条 / 要求 >=  4 条  OK
+    review           实际   3 条 / 要求 >=  3 条  OK
+    credit_log       实际   5 条 / 要求 >=  4 条  OK
+    operation_log    实际   7 条 / 要求 >=  5 条  OK
+    system_config    实际  11 条 / 要求 >= 11 条  OK
+
+  PRAGMA integrity_check：[('ok',)]
+  PRAGMA foreign_key_check：[] 无违反
+
+  物品状态/流转方式覆盖：
+    item.status=DRAFT      1
+    item.status=LOCKED     1
+    item.status=OFF_SHELF  1
+    item.status=ON_SALE    5
+    item.status=PENDING    1
+    item.status=REJECTED   1
+    item.status=SOLD       2
+    item.trade_type=EXCHANGE  3
+    item.trade_type=FREE      1
+    item.trade_type=SELL      8
+    trade_flow.status=APPLYING  1
+    trade_flow.status=CANCELLED 1
+    trade_flow.status=DONE      2
+
+==============================================================================
+6. 约束有效性反例测试（预期全部被拒绝）
+==============================================================================
+  [PASS] CHECK：user.role 非法取值 ADMIN2 -> 拒绝：CHECK constraint failed: role IN ('STUDENT','TEACHER','ADMIN')
+  [PASS] CHECK：item.status 非法取值 LOST -> 拒绝：CHECK constraint failed: status IN ('DRAFT','PENDING','ON_SALE','LOCKED',
+                                              'SOLD','OFF_SHELF','REJECTED')
+  [PASS] CHECK：item.condition_level=11 超出 1-10 -> 拒绝：CHECK constraint failed: condition_level BETWEEN 1 AND 10
+  [PASS] CHECK：review.score=6 超出 1-5 -> 拒绝：CHECK constraint failed: score BETWEEN 1 AND 5
+  [PASS] UNIQUE：user.username 重复 admin -> 拒绝：UNIQUE constraint failed: user.username
+  [PASS] UNIQUE：favorite(user_id,item_id) 重复收藏 -> 拒绝：UNIQUE constraint failed: favorite.user_id, favorite.item_id
+  [PASS] UNIQUE：review(flow_id,reviewer_id) 同一流转重复评价 -> 拒绝：UNIQUE constraint failed: review.flow_id, review.reviewer_id
+  [PASS] FK：item.owner_id=99999 不存在 -> 拒绝：FOREIGN KEY constraint failed
+  [PASS] FK：trade_flow.item_id=99999 不存在 -> 拒绝：FOREIGN KEY constraint failed
+  [PASS] 部分唯一索引：同一物品第二条 APPLYING 流转 -> 拒绝：UNIQUE constraint failed: trade_flow.item_id
+  [PASS] CHECK（表级）：FREE 物品价格非 0（ck_item_free_price） -> 拒绝：CHECK constraint failed: ck_item_free_price
+  [PASS] CHECK：system_config.config_key 重复 -> 拒绝：UNIQUE constraint failed: system_config.config_key
+
+  反例测试通过 12/12 条。
+
+==============================================================================
+7. 演示口令哈希一致性校验（PBKDF2WithHmacSHA256 / 100000 次 / 16 字节盐 / 256 位）
+==============================================================================
+  admin      salt=SHi81VOHxued... hash=LltcKwZY8piO5JJu... 一致=True
+  zhangsan   salt=lNV5HGCAnwAu... hash=5urlMhZcfWHBCMSo... 一致=True
+  lisi       salt=jHCSJmR8RcvF... hash=dJAOUPR08md2MrII... 一致=True
+  wangwu     salt=DWiUAUrGs3rq... hash=5pMcGwTZxUzEGv2p... 一致=True
+  teacher01  salt=ayuKzFi/wtRJ... hash=zJGbOBn9X/17Qv5O... 一致=True
+
+==============================================================================
+8. 结论
+==============================================================================
+  schema.sql 与 seed-data.sql 在真实 SQLite 3.53.1 引擎上执行成功；
+  11 张表全部建立，完整性检查与外键检查均无违反，约束反例测试全部被拒绝。
+
+验证结束时间：2026-11-02 15:53:29（耗时 0.28 秒）
+本文件由 verify_db.py 自动生成，内容为真实执行输出，未做任何人工修改。
+
+==============================================================================
+D5-3  ER 图文件自检（design/05-ER图.drawio）
+==============================================================================
+检查时间：2026-11-02 15:53:29
+检查文件：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\design\05-ER图.drawio
+文件大小：69228 字节（要求 > 15360 字节：PASS）
+XML 解析：xml.etree.ElementTree 解析通过（根节点 <mxfile>）
+结构校验：mxfile → diagram(id=er, name=ER图) → mxGraphModel → root（PASS）
+mxCell 总数：162（要求 >=80：PASS）
+
+实体框与字段数核对（swimlane 框 + 子字段行）：
+  user           实体框=True  字段行=16（期望 16）PASS
+  category       实体框=True  字段行= 6（期望  6）PASS
+  item           实体框=True  字段行=17（期望 17）PASS
+  item_image     实体框=True  字段行= 5（期望  5）PASS
+  favorite       实体框=True  字段行= 4（期望  4）PASS
+  trade_message  实体框=True  字段行= 7（期望  7）PASS
+  trade_flow     实体框=True  字段行=11（期望 11）PASS
+  review         实体框=True  字段行= 7（期望  7）PASS
+  credit_log     实体框=True  字段行= 7（期望  7）PASS
+  operation_log  实体框=True  字段行= 8（期望  8）PASS
+  system_config  实体框=True  字段行= 5（期望  5）PASS
+  实体核对：11/11 通过
+
+关系线核对（source/target 必须锚定具体字段 cell，两端带基数标签）：
+  r_user_item        f_user_id                → f_item_owner_id          基数标签=1/N          PASS
+  r_category_item    f_category_id            → f_item_category_id       基数标签=1/N          PASS
+  r_category_self    f_category_id            → f_category_parent_id     基数标签=1/N          PASS
+  r_item_image       f_item_id                → f_item_image_item_id     基数标签=1/N          PASS
+  r_user_favorite    f_user_id                → f_favorite_user_id       基数标签=1/N          PASS
+  r_item_favorite    f_item_id                → f_favorite_item_id       基数标签=1/N          PASS
+  r_item_message     f_item_id                → f_trade_message_item_id  基数标签=1/N          PASS
+  r_user_msg_from    f_user_id                → f_trade_message_from_user_id 基数标签=1/N          PASS
+  r_user_msg_to      f_user_id                → f_trade_message_to_user_id 基数标签=1/N          PASS
+  r_item_flow        f_item_id                → f_trade_flow_item_id     基数标签=1/N          PASS
+  r_user_flow_seller f_user_id                → f_trade_flow_seller_id   基数标签=1/N          PASS
+  r_user_flow_buyer  f_user_id                → f_trade_flow_buyer_id    基数标签=1/N          PASS
+  r_flow_review      f_trade_flow_id          → f_review_flow_id         基数标签=1/N          PASS
+  r_user_reviewer    f_user_id                → f_review_reviewer_id     基数标签=1/N          PASS
+  r_user_reviewee    f_user_id                → f_review_reviewee_id     基数标签=1/N          PASS
+  r_user_credit      f_user_id                → f_credit_log_user_id     基数标签=1/N          PASS
+  r_flow_credit      f_trade_flow_id          → f_credit_log_flow_id     基数标签=0..N/1       PASS
+  r_user_oplog       f_user_id                → f_operation_log_operator_id 基数标签=0..N/1       PASS
+  关系线核对：18/18 条通过（期望 18 条）
+
+自检结论：全部通过：XML 合法、11 实体 93 字段、18 条字段级关系、节点数 162、体积 69228 字节
+说明：该文件为 drawio 原生 XML 工程文件（非位图），可被 diagrams.net / VS Code Draw.io Integration 直接打开与编辑。
+
+==============================================================================
+D7 Java 工程构建与运行验证（第 3 轮，真实执行记录，由 _append_evidence.py 追加）
+==============================================================================
+追加时间：2026-11-02 15:53:29
+JDK：java version "25.0.2" 2026-01-20 LTS / javac 25.0.2，编译目标 --release 17
+Python：3.12.14 / sqlite3 3.53.1
+Maven：本机**未安装 Maven**，因此未执行、也未伪造任何 mvn 输出（详见第 13 节）
+运行期依赖：从 repo1.maven.org 手工下载 sqlite-jdbc-3.46.1.0.jar、slf4j-api-2.0.13.jar、
+            slf4j-nop-2.0.13.jar、junit-platform-console-standalone-1.10.2.jar 至 %TEMP%\gc_libs
+设计说明：主源码仅使用 JDK 标准库（日志门面用 java.util.logging，JDBC 驱动以
+          Class.forName("org.sqlite.JDBC") 反射加载），故 javac --release 17 在零 classpath 下即可编译。
+第 3 轮代码变化：新增 controller 包薄壳 6 个（含 ControllerSupport）、第 4 个排序策略
+          CreditFirstItemSortStrategy、TradeService.historyDetail/countUnread、
+          UserService.getCredit、ReviewDao.findByFlowId；Main 演示改为“发布→审核→检索→流转→成交”。
+
+==============================================================================
+9. 主源码编译（javac --release 17，零 classpath）
+==============================================================================
+命令：javac --release 17 -encoding UTF-8 -d %TEMP%\gc_compile3 <src/main/java 下全部 .java>
+源文件数：107
+编译器输出：
+（编译器无任何输出 = 0 错误 0 警告）
+退出码：0
+错误数：0
+结论：javac --release 17 编译通过（107 个源文件，0 错误）
+
+==============================================================================
+10. 测试源码编译（javac --release 17，classpath 含 junit-platform-console-standalone-1.10.2）
+==============================================================================
+源文件数：2（PasswordUtilTest、ValidatorTest）
+编译器输出：
+（编译器无任何输出 = 0 错误 0 警告）
+退出码：0
+
+==============================================================================
+11. JUnit 5 测试执行（junit-platform-console-standalone 1.10.2）
+==============================================================================
+命令：java -jar junit-platform-console-standalone-1.10.2.jar execute
+      --class-path <classes;test-classes> --scan-class-path --details=tree
+
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+╷
+├─ JUnit Jupiter ✔
+│  ├─ ValidatorTest ✔
+│  │  ├─ 图片仅允许 jpg/jpeg/png 后缀 ✔
+│  │  ├─ 非法用户名应被拒绝 ✔
+│  │  ├─ 价格不得为负，描述长度受 500 字限制 ✔
+│  │  ├─ 学号必须为 8-12 位数字 ✔
+│  │  ├─ 合法用户名应通过（4-20 位字母数字下划线） ✔
+│  │  └─ 口令必须同时包含字母与数字且长度 8-20 ✔
+│  └─ PasswordUtilTest ✔
+│     ├─ encodeDemo 应返回 salt:hash 两段结构 ✔
+│     ├─ 相同口令与盐应得到相同摘要（确定性） ✔
+│     ├─ 盐应为 16 字节随机数的 Base64 文本 ✔
+│     ├─ 错误口令应校验失败 ✔
+│     └─ 正确口令应通过校验 ✔
+├─ JUnit Vintage ✔
+└─ JUnit Platform Suite ✔
+
+Test run finished after 375 ms
+[         5 containers found      ]
+[         0 containers skipped    ]
+[         5 containers started    ]
+[         0 containers aborted    ]
+[         5 containers successful ]
+[         0 containers failed     ]
+[        11 tests found           ]
+[         0 tests skipped         ]
+[        11 tests started         ]
+[         0 tests aborted         ]
+[        11 tests successful      ]
+[         0 tests failed          ]
+
+
+结论：11 个测试全部通过（0 失败 0 跳过）。
+
+==============================================================================
+12. 控制台演示 Main 端到端运行（java -cp <classes;sqlite-jdbc;slf4j> edu.campus.recycle.Main）
+==============================================================================
+工作目录：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\code\green-campus
+数据库：jdbc:sqlite:data/greencampus.db（数据目录由程序自动创建）
+第 3 轮演示流程（契约 v1.1 §13-8）：发布不带 status → 默认 PENDING（published_at 为 null）
+→ 管理员 ItemService.audit(pass=true) 审核通过 → ON_SALE 且写入 published_at →
+检索（含 CREDIT_FIRST 信用优先排序）→ 申请 → 同意 → 确认成交（跨表事务）→ 评价/收藏
+→ 统计与 CSV 导出；新增 historyDetail/countUnread/getCredit 在演示中被真实调用。
+本次运行前数据库文件已存在（含上一次运行产生的业务数据），schema.sql 采用“先反序 DROP
+再重建”的幂等策略并临时关闭外键检查，运行中先成功重建 11 张表，再导入 seed-data.sql，
+证明建库脚本与种子脚本可重复执行。
+
+============================================================
+ 绿色校园闲置物品循环流转平台 · 迭代一（成员1 数据层 D7 骨架）
+ 技术栈：Java 17 + SQLite(JDBC) + 手写 DAO + 工厂/策略/观察者/模板方法
+============================================================
+[1/9] 数据库初始化完成：jdbc:sqlite:data/greencampus.db
+      system_config 项数：11
+      可用分类数：10，示例：教材书籍
+[2/9] 注册成功：userId=6，初始信用分=100
+[3/9] 登录成功：demo_stu，角色=STUDENT，信用分=100
+[4/9] 发布物品成功：itemId=13，状态=PENDING（默认待审核），上架时间=null
+[5/9] 审核通过：itemId=13，当前状态=ON_SALE，上架时间=2026-11-02T15:51:27
+[6/9] 检索「数据库」命中 1 条，当前页 1 条：
+      - #13 数据库系统概念（第 7 版） / SELL / 45.0
+      信用优先排序（CREDIT_FIRST）前 3 条：
+      * #2 考研英语一历年真题（2015-2025）
+      * #1 《数据结构（C 语言版）》第 2 版
+      * #11 小米移动电源 10000mAh
+[7/9] 申请成功：flowId=5，金额=45.0；已同意流转：flowId=5，物品状态=LOCKED
+[8/9] 确认成交成功：flowId=5：物品状态=SOLD，卖家信用分 100 -> 102
+      评价成功：reviewId=4，评分=5
+      收藏切换结果=true；卖家信用等级=良好（变更次数 2）；买家未读消息=2；demo_stu 流转详情条数=1
+      最近操作日志条数：10
+[9/9] 完成流转统计（按一级分类）：
+      - 教材书籍：完成 2 笔，金额 70.00 元，减排 1.60 kgCO2e
+      - 文体用品：完成 1 笔，金额 0.00 元，减排 1.20 kgCO2e
+      - 数码配件：完成 0 笔，金额 0.00 元，减排 0.00 kgCO2e
+      - 生活物资：完成 0 笔，金额 0.00 元，减排 0.00 kgCO2e
+      碳减排总量：2.8 kgCO2e
+      统计 CSV 已导出：C:\Users\wanhe\Desktop\软件构造\迭代一-成员1\code\green-campus\data\export\statistics.csv
+============================================================
+ 演示流程全部通过（注册/登录/发布/审核/检索/流转/成交事务/评价/收藏/统计）
+============================================================
+
+
+退出码：0
+
+==============================================================================
+13. 关于 Maven 的如实说明
+==============================================================================
+本机未安装 Maven（命令行无 mvn/mvnw），因此：
+  * 未执行 `mvn -q -DskipTests package`，本文件亦不包含任何伪造的 Maven 构建输出；
+  * pom.xml 中的依赖坐标、插件版本与 Main-Class 配置已按契约编写，需在装有 Maven 的机器上
+    执行 `mvn -q -DskipTests package` 生成 target/green-campus-1.0.0.jar（shade 插件产出可执行 fat jar）；
+  * 本文件第 9~12 节用 JDK 自带 javac / java 与手工下载的依赖 jar 完成等效的编译与运行验证。

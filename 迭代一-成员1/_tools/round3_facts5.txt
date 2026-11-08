@@ -1,0 +1,96 @@
+﻿D1 错误码总表 = 表#56，行数=86
+  | 错误码 | 语义 | 触发场景与所属模块
+  | VAL-001 | 字段为空、长度或格式不合法 | 注册、发布、检索、备注等表单输入校验（用户模块 / 物品模块；Validator + Service 双层）
+  | VAL-002 | 口令强度不足或两次输入不一致 | 注册与修改密码的口令强度校验（用户模块 UserServiceImpl）
+  | VAL-003 | 修改密码时原口令校验失败 | 修改密码（用户模块 UserServiceImpl.changePassword）
+  | VAL-004 | 流转方式与价格不匹配（FREE 必须为 0） | 物品发布的价格与流转方式一致性校验（物品模块 ItemServiceImpl.publish）
+  | VAL-005 | 价格区间非法（min > max、负数、超出上限） | 检索价格区间与成色筛选（物品模块 / 检索模块）
+  | VAL-006 | 消息内容为空或超过 200 字 | 意向沟通发送留言（流转模块 TradeServiceImpl.sendMessage）
+  | VAL-007 | 统计时间区间非法（from 晚于 to） | 数据统计与 CSV 导出的区间校验（统计模块 StatisticServiceImpl）
+  | VAL-008 | 新口令与原口令相同 | 修改密码（用户模块 UserServiceImpl.changePassword）
+  | VAL-009 | 评分超出 1–5 范围 | 双方互评的评分校验（评价模块 ReviewServiceImpl.review）
+  | DUP-001 | 用户名已存在 | 注册的用户名唯一性预检与兜底（用户模块 UserDao.existsByUsername）
+  | DUP-002 | 学号已存在 | 注册的学号唯一性预检与兜底（用户模块 UserDao）
+  | DUP-003 | 同一流转同一人重复评价（原 D2 的 DUP-041 归并至此） | 评价唯一性（评价模块 ReviewServiceImpl.review；review UNIQUE(flow_id, reviewer_id)）
+  | DUP-004 | 同一父分类下分类重名（原 D2 的 DUP-051 归并至此） | 分类新增/改名（管理员模块 AdminServiceImpl.addCategory）
+  | NF-001 | 目标数据不存在（按 id 查询的用户/物品/流转/分类） | 通用按主键查不到即抛（各模块 Service 前置读取；含 UserService.updateCredit 的目标用户）
+  | NF-002 | 所选分类不存在或已禁用 | 物品发布与检索的分类有效性校验（物品模块）
+  | AUTH-001 | 用户名不存在或口令错误 | 登录认证（用户模块 UserServiceImpl.login；不提示具体是用户名还是口令错）
+  | LOCK-001 | 账号处于锁定期（含正确口令） | 登录失败锁定（用户模块；login.max_fail=5、login.lock_minutes=15）
+  | PERM-001 | 角色不具备该操作权限（非 ADMIN） | 管理端接口的角色拦截（管理员模块 AdminServiceImpl / 各 Service 管理方法）
+  | PERM-002 | 操作非本人资源（非所有者且非管理员） | 修改/下架他人物品、越权访问本人流转（物品模块 / 流转模块）
+  | BR-0xx | 违反业务规则 BR-01…BR-12（携带具体 BR 编号） | 任一业务规则违反（业务层统一抛 BusinessRuleException，code 即 BR 编号）
+  | DB-001 | 数据库连接失败、SQL 执行失败、约束冲突（非业务类） | 通用数据访问兜底（数据访问层，转为用户可读文案）
+  | TX-001 | 事务提交或回滚失败（跨表写操作） | 成交确认 confirm 的跨表事务（流转模块 TradeServiceImpl.confirm）
+  | IO-001 | 文件写入失败（目标不可写、磁盘满、文件被占用） | CSV 报表导出（统计模块 AbstractCsvExporter，IO 异常转换为 AppException）
+  | VAL-011 | 物品发布字段校验（标题 2–50 字 / 价格 ≥0 / 图片 ≤5 张且 jpg-png） | 物品模块 ItemServiceImpl.publish（模块层细分码）
+  | NF-011 | 物品不存在（更新/下架路径） | 物品模块 ItemServiceImpl.updateItem、offShelf
+  | NF-012 | 物品不存在（详情路径） | 物品模块 ItemServiceImpl.detail
+  | NF-021 | 物品不存在（收藏路径） | 收藏模块 FavoriteServiceImpl.toggle
+  | NF-022 | 物品不存在（流转申请路径） | 流转模块 TradeServiceImpl.apply
+  | NF-023 | 流转不存在（取消路径） | 流转模块 TradeServiceImpl.cancel
+  | NF-031 | 流转不存在（评价路径） | 评价模块 ReviewServiceImpl.review
+  | NF-051 | 分类不存在（启用/停用分类） | 管理员模块 AdminServiceImpl.toggleCategory
+  | AUTH-002 | 原口令错误（改密） | 用户模块 UserServiceImpl.changePassword（模块层细分码）
+  | PERM-011 | 非发布者且非管理员（更新物品） | 物品模块 ItemServiceImpl.updateItem
+  | PERM-012 | 非发布者且非管理员（下架物品） | 物品模块 ItemServiceImpl.offShelf
+  | PERM-013 | 非 ADMIN（物品审核） | 物品模块 ItemServiceImpl.audit / AdminServiceImpl.audit
+  | PERM-021 | 操作人非出让方（同意申请） | 流转模块 TradeServiceImpl.agree
+  | PERM-022 | 操作人非买卖双方（确认完成） | 流转模块 TradeServiceImpl.confirm
+  | PERM-023 | 非当事人且非管理员（取消流转） | 流转模块 TradeServiceImpl.cancel（买卖双方或 ADMIN 允许，cancel_reason 必填）
+  | PERM-051 | 非 ADMIN（分类维护） | 管理员模块 AdminServiceImpl.addCategory / toggleCategory
+  | DB-101 | BaseDao.findById 查询失败 | 数据访问层 BaseDao 默认实现（连接获取/结果集映射失败）
+  | DB-102 | BaseDao.insert 失败 | 数据访问层 BaseDao（主键冲突、NOT NULL/CHECK/UNIQUE 违反、磁盘只读）
+  | DB-103 | BaseDao.update 失败 | 数据访问层 BaseDao（主键不存在返回 0 行不抛异常；约束违反抛异常）
+  | DB-104 | BaseDao.deleteById 失败 | 数据访问层 BaseDao（被外键 ON DELETE RESTRICT 引用时删除失败）
+  | DB-111 | UserDao.findByUsername 查询失败 | 用户模块 UserDao（查不到返回 Optional.empty，不抛）
+  | DB-112 | UserDao.existsByUsername 失败 | 用户模块唯一性预检 SQL 失败
+  | DB-113 | UserDao.findByCondition 失败 | 管理员用户列表的动态条件拼接或分页参数绑定失败（用户模块）
+  | DB-114 | UserDao.updateLoginSuccess 失败 | 用户模块登录成功后更新 last_login_at / 重置 fail_count 失败
+  | DB-121 | CategoryDao.findEnabled 失败 | 分类模块查询启用分类失败
+  | DB-122 | CategoryDao.existsByName 失败 | 分类模块同一父分类下重名预检失败
+  | DB-123 | CategoryDao.updateEnabled 失败 | 分类模块启用/停用写入失败
+  | DB-131 | ItemDao.insert 失败 | 物品模块（外键 owner_id/category_id 不存在、CHECK 违反；含 item.status 默认 PENDING）
+  | DB-132 | ItemDao.findById 失败 | 物品模块详情查询失败
+  | DB-133 | ItemDao.search 失败 | 物品模块动态 SQL 拼接（关键词/分类/价格区间/状态/排序）失败
+  | DB-134 | ItemDao.updateStatus 失败 | 物品模块状态机写入（ON_SALE/LOCKED/SOLD/OFF_SHELF/REJECTED/DRAFT）失败
+  | DB-135 | ItemDao.increaseViewCount 失败 | 物品模块浏览数自增失败
+  | DB-136 | ItemDao.countByCategory 失败 | 统计模块按分类聚合失败（返回 StatisticsDTO 列表）
+  | DB-141 | ItemImageDao.batchInsert 失败 | 物品模块图片批量插入失败（须与 item 同事务）
+  | DB-142 | ItemImageDao.findByItemId 失败 | 物品模块按物品查图片失败（sort_order=0 为首图）
+  | DB-143 | ItemImageDao.deleteByItemId 失败 | 物品模块删除物品时级联清理图片记录失败
+  | DB-151 | FavoriteDao.exists 失败 | 收藏模块存在性判断失败（toggle 语义，BR-09）
+  | DB-152 | FavoriteDao.insert 失败 | 收藏模块 UNIQUE(user_id, item_id) 冲突（并发重复收藏）
+  | DB-153 | FavoriteDao.delete 失败 | 收藏模块取消收藏失败
+  | DB-154 | FavoriteDao.findItemsByUserId 失败 | 收藏模块我的收藏列表查询失败（join item）
+  | DB-155 | FavoriteDao.countByItemId 失败 | 收藏模块收藏数核对查询失败
+  | DB-161 | TradeMessageDao.insert 失败 | 流转模块发送沟通消息失败
+  | DB-162 | TradeMessageDao.findConversation 失败 | 流转模块按双方 + 物品查询会话失败
+  | DB-163 | TradeMessageDao.markRead 失败 | 流转模块接收方未读标记已读失败
+  | DB-164 | TradeMessageDao.countUnread 失败 | 流转模块未读消息数统计失败（主界面角标）
+  | DB-171 | TradeFlowDao.insert 失败 | 流转模块部分唯一索引 uq_flow_item_active 冲突（同一物品已有进行中流转，BR-05）
+  | DB-172 | TradeFlowDao.findActiveByItemId 失败 | 流转模块查询进行中（APPLYING/AGREED）流转失败
+  | DB-173 | TradeFlowDao.updateStatus 失败 | 流转模块状态机更新（APPLYING→AGREED→DONE / CANCELLED）失败
+  | DB-174 | TradeFlowDao.findByUserId 失败 | 流转模块我的流转记录分页查询失败
+  | DB-175 | TradeFlowDao.countByCategoryForPeriod 失败 | 统计模块按区间 + 分类统计流转量与金额失败
+  | DB-181 | ReviewDao.insert 失败 | 评价模块 UNIQUE(flow_id, reviewer_id) 冲突（同一流转重复评价，BR-08）
+  | DB-182 | ReviewDao.existsByFlowAndReviewer 失败 | 评价模块评价唯一性预检失败
+  | DB-183 | ReviewDao.findByRevieweeId 失败 | 评价模块查询某用户收到的评价失败
+  | DB-191 | CreditLogDao.insert 失败 | 信用模块信用流水插入失败（须与信用分更新同事务，BR-04/BR-07）
+  | DB-192 | CreditLogDao.findByUserId 失败 | 信用模块查询最近 N 条信用变更失败
+  | DB-201 | OperationLogDao.insert 失败 | 日志模块关键操作日志写入失败（仅追加，BR-11）
+  | DB-202 | OperationLogDao.findRecent 失败 | 日志模块管理员后台查询最近日志失败
+  | DB-211 | SystemConfigDao.getValue 失败 | 配置模块读取配置失败（键不存在返回 null，由 ConfigManager 回退默认值）
+  | DB-212 | SystemConfigDao.upsert 失败 | 配置模块配置键写入失败（config_key UNIQUE 冲突时转为更新）
+  | TX-002 | 注册事务失败（user + operation_log 未同事务提交） | 用户模块 UserServiceImpl.register
+  | TX-011 | 发布事务失败（item + item_image + operation_log 未同事务提交） | 物品模块 ItemServiceImpl.publish
+  | TX-041 | 评价事务失败（review + credit 更新 + credit_log 未同事务） | 评价模块 ReviewServiceImpl.review
+
+==== D6 含 D5 定义/交付物的段落 ====
+  [P] 交付物编号与文件对应关系（全组唯一口径，避免「D2/D3/D4」在不同文档中指代不同文件）：D1 = docs/01-需求规格说明书；D2 = docs/02-模块化设计与接口规范；D3 = design/03-*.drawio（UML 类图，1 份）；D4 = design/04-*.drawio（UML 时序图，6 张）；D5 = docs/05-数据库设计说明书 + db/schema.sql + db/seed-data.sql；D6 = docs/06-本文件；D7 = 部署说明 + Maven 骨架（code/pom.xml、start.bat）。
+
+==== D6 含 D5 的表格行 ====
+  [T2] 成员1 | 成员1（待补） | （待补） | 系统设计与数据层（组长） | 需求梳理与需求规格主笔、UML 类图与时序图、表结构与 JDBC 持久化、异常与事务、接口基线维护 | D1 需求规格、D2 模块化设计与接口规范、D3 类图、D4 时序图、D5 数据库设计、D6 本文件、契约维护
+  [T3] 成员1 | 数据层 | 11 张表 DDL、索引与约束（含部分唯一索引）、seed 数据与配置项 | docs/05-数据库设计说明书.docx（D5）、db/schema.sql、db/seed-data.sql | 2026-11-12
+  [T4] D10 11-11（周三） | 数据库设计 | 11 张表 DDL、字段类型与约束、索引（含 uq_flow_item_active 部分唯一索引）、外键建表顺序 | 成员1 | db/schema.sql、docs/05-数据库设计（D5）草稿 | 
+  [T4] D11 11-12（周四） | 数据库评审 | DDL 走查（命名、约束完备性、字段是否覆盖 FR）、seed 数据与 system_config 参数值 | 成员2 复核业务字段 成员3 复核界面字段 | docs/05 v0.6（D5）、db/seed-data.sql | ★M3 数据库评审

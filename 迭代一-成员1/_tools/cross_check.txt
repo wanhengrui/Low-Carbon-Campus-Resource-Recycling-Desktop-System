@@ -1,0 +1,71 @@
+D8 交叉一致性核对报告
+==============================================================================
+schema.sql: 11 表 / 13 索引
+entity 目录: 16 个类（其中枚举 5 个）
+03-UML类图.drawio: mxCell 412 个，识别类 103 个，含属性组 71 个
+code 中 interface 声明: 25 个
+
+【1】表 <-> 实体类
+  表↔类 缺失: 无
+  类↔表 多余: 无
+
+【2】字段三方对齐（schema 列 / 实体字段 / 类图属性）
+  [OK] category ← Category: 列6 / 字段6 / 类图6
+  [OK] credit_log ← CreditLog: 列7 / 字段7 / 类图7
+  [OK] favorite ← Favorite: 列4 / 字段4 / 类图4
+  [OK] item ← Item: 列17 / 字段17 / 类图17
+  [OK] item_image ← ItemImage: 列5 / 字段5 / 类图5
+  [OK] operation_log ← OperationLog: 列8 / 字段8 / 类图8
+  [OK] review ← Review: 列7 / 字段7 / 类图7
+  [OK] system_config ← SystemConfig: 列5 / 字段5 / 类图5
+  [OK] trade_flow ← TradeFlow: 列11 / 字段11 / 类图11
+  [OK] trade_message ← TradeMessage: 列7 / 字段7 / 类图7
+  [OK] user ← User: 列16 / 字段16 / 类图16
+  小结: 11 张表三方一致 / 0 张存在差异
+
+【3】枚举一致性
+  FlowStatus: 类图有
+  ItemStatus: 类图有
+  Role: 类图有
+  TradeType: 类图有
+  UserStatus: 类图有
+
+【4】接口声明 <-> D2 文档 / 契约
+  code 有接口、D2 未出现: 无
+  D2 有接口、code 未声明: 无
+  （已排除的合法提及：AbstractJdbcDao、FakeUserDao、SystemService；判定口径=名在 D2 全文出现即算覆盖）
+
+【4b】DTO 字段对齐（code DTO / 类图）
+  [OK] ItemQuery: code 10 字段 / 类图 10
+  [OK] LoginResult: code 8 字段 / 类图 8
+  [OK] PageResult: code 5 字段 / 类图 5
+  [OK] StatisticsDTO: code 4 字段 / 类图 4
+  [OK] TradeDetailDTO: code 6 字段 / 类图 6
+  [OK] UserCreditDTO: code 6 字段 / 类图 6
+
+【5】接口清单（code）
+  AdminService                 edu/campus/recycle/service/AdminService.java
+  BaseDao                      edu/campus/recycle/dao/BaseDao.java
+  CarbonFactorStrategy         edu/campus/recycle/util/CarbonFactorStrategy.java
+  CategoryDao                  edu/campus/recycle/dao/CategoryDao.java
+  ConnectionCallback           edu/campus/recycle/util/ConnectionCallback.java
+  CreditLogDao                 edu/campus/recycle/dao/CreditLogDao.java
+  FavoriteDao                  edu/campus/recycle/dao/FavoriteDao.java
+  FavoriteService              edu/campus/recycle/service/FavoriteService.java
+  ItemDao                      edu/campus/recycle/dao/ItemDao.java
+  ItemEventListener            edu/campus/recycle/util/ItemEventListener.java
+  ItemImageDao                 edu/campus/recycle/dao/ItemImageDao.java
+  ItemService                  edu/campus/recycle/service/ItemService.java
+  ItemSortStrategy             edu/campus/recycle/util/ItemSortStrategy.java
+  OperationLogDao              edu/campus/recycle/dao/OperationLogDao.java
+  ReviewDao                    edu/campus/recycle/dao/ReviewDao.java
+  ReviewService                edu/campus/recycle/service/ReviewService.java
+  RowMapper                    edu/campus/recycle/util/RowMapper.java
+  StatisticService             edu/campus/recycle/service/StatisticService.java
+  SystemConfigDao              edu/campus/recycle/dao/SystemConfigDao.java
+  TradeFlowDao                 edu/campus/recycle/dao/TradeFlowDao.java
+  TradeMessageDao              edu/campus/recycle/dao/TradeMessageDao.java
+  TradeService                 edu/campus/recycle/service/TradeService.java
+  TransactionCallback          edu/campus/recycle/util/TransactionCallback.java
+  UserDao                      edu/campus/recycle/dao/UserDao.java
+  UserService                  edu/campus/recycle/service/UserService.java

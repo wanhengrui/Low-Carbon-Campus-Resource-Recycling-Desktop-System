@@ -1,0 +1,319 @@
+!! D1 card not found FR-03
+!! D1 card not found FR-05
+!! D1 card not found FR-07
+!! D1 card not found FR-10
+!! D1 card not found FR-12
+!! D1 card not found FR-13
+!! D1 card not found FR-14
+=============== D1 BR-table? 54 head ['编号', '规则原文（逐字引自共享契约 §9）', '涉及数据表', '违反时的系统行为', '错误提示 code'] rows 13
+=============== D2 FR-mapping candidate table 8
+    模块 || 职责 || 对外接口（Service / DAO） || 依赖模块 || 负责人
+    M1 用户模块 || 注册、登录、密码加密、角色区分、账号锁定与解冻、个人信用分展示 || UserService（8 个方法）、UserDao || M8 基础设施 || 成员2（业务）/ 成员3（UI）
+    M2 物品模块 || 发布、修改、下架自己的物品、详情浏览、分类选择、图片绑定、管理员审核 || ItemService（6 个方法）、ItemDao、ItemImageDao || M1 用户（信用分校验）、M8 || 成员2（业务）/ 成员3（UI）
+    M3 检索收藏模块 || 关键词模糊检索、分类/价格/流转方式/状态筛选、排序、分页、收藏 toggle 与收藏数维护 || ItemService.search、FavoriteService（2 个方法）、FavoriteDao || M2 物品、M8 || 成员2（业务）/ 成员3（UI）
+    M4 流转模块 || 意向申请、同意、成交确认（跨表事务）、取消、历史记录、沟通消息 || TradeService（5 个方法）、TradeFlowDao、TradeMessageDao || M1 用户、M2 物品、M8 || 成员2（业务）/ 成员3（UI）
+    M5 评价信用模块 || 流转完成后双方互评、评价唯一性、信用分增减与 credit_log 快照 || ReviewService（1 个方法）、UserService.updateCredit、ReviewDao、CreditLogDao || M4 流转、M8 || 成员2（业务）/ 成员3（UI）
+    M6 统计导出模块 || 按分类统计流转数量与金额、低碳减排估算、CSV 导出 || StatisticService（3 个方法）、ItemDao.countByCategory、TradeFlowDao.countByCategoryForPeriod、CsvExporter || M2、M4、M8 || 成员2（业务）/ 成员3（导出 UI）
+    M7 管理员模块 || 用户冻结/解冻、违规物品下架与审核、分类维护、操作日志查看、全平台统计 || AdminService（3 个方法）、UserService.freezeUser/unfreezeUser、ItemService.audit/offShelf、OperationLogDao、CategoryDao || M1、M2、M4、M6、M8 || 成员2（业务）/ 成员3（UI）
+    M8 基础设施模块 || 分层骨架、DbUtil 连接与事务、异常体系、日志、校验工具、配置、DAO/Service 工厂、Maven 构建 || BaseDao、AbstractJdbcDao、DbUtil、PasswordUtil、Validator、CsvExporter、ConfigManager、DaoFactory、ServiceFactory、AppE || 无（被全部模块依赖） || 成员1（设计）/ 成员2、成员3（复用）
+=============== D2 FR-mapping candidate table 9
+    调用方模块 || 被调用模块 || 协作方式（接口方法） || 说明
+    M2 物品 || M1 用户 || UserService.findById(userId)；UserService.updateCredit(userId, delta, flowId, reason) || 发布前校验信用分 ≥60（BR-04）
+    M3 检索收藏 || M2 物品 || ItemService.search(ItemQuery)、ItemService.detail(itemId) || 检索与详情复用物品模块能力
+    M4 流转 || M2 物品 || ItemService.detail(itemId)；ItemDao.updateStatus(itemId, "LOCKED"/"SOLD", remark) || 流转改变物品状态（BR-05/BR-06）
+    M4 流转 || M1 用户 || UserService.updateCredit(userId, delta, flowId, reason) || 成交后双方加分，写 credit_log 快照
+    M5 评价信用 || M4 流转 || TradeService.history(userId, status, pageNo, pageSize)；TradeFlowDao.findById(flowId) || 评价前置条件：流转必须 DONE（BR-08）
+    M6 统计导出 || M2、M4 || ItemDao.countByCategory()；TradeFlowDao.countByCategoryForPeriod(from, to) || 只读聚合查询，不修改业务数据
+    M7 管理员 || M1、M2 || UserService.freezeUser/unfreezeUser；ItemService.audit/offShelf || 管理员能力复用用户与物品模块的业务规则
+    全部模块 || M8 基础设施 || DbUtil、ConfigManager、DaoFactory、ServiceFactory、Validator、AppException || 横向复用，不产生业务耦合
+=============== D2 FR-mapping candidate table 10
+    需求/规则 || 编号 || 归属模块 || 主要实现类
+    用户账号（注册/登录/密码加密/角色） || FR-01、BR-01、BR-02 || M1 用户 || UserServiceImpl、PasswordUtil
+    连续失败锁定 15 分钟 || BR-03 || M1 用户 || UserServiceImpl、UserDao.updateFailCount
+    闲置物品发布/修改/下架 || FR-02、BR-12 || M2 物品 || ItemServiceImpl、ItemImageDao
+    物品检索与筛选、收藏 || FR-03、BR-09 || M3 检索收藏 || ItemServiceImpl.search、FavoriteServiceImpl
+    供需沟通与流转记录 || FR-04、BR-05、BR-06 || M4 流转 || TradeServiceImpl、TradeFlowDao、TradeMessageDao
+    流转成交事务与回滚 || BR-07 || M4 流转 || TradeServiceImpl.confirm、AbstractJdbcDao.executeInTransaction
+    评价与信用分 || FR-05、BR-08 || M5 评价信用 || ReviewServiceImpl、UserServiceImpl.updateCredit
+    统计与 CSV 导出 || FR-06 || M6 统计导出 || StatisticServiceImpl、CsvExporter
+    管理员后台（用户/物品/分类/日志） || FR-07、BR-10、BR-11 || M7 管理员 || AdminServiceImpl、ItemServiceImpl.audit、OperationLogDao
+    GUI 事件驱动交互 || FR-08（NFR 交互性） || M1～M7 || ui 包窗体 + SwingWorker
+=============== D2 cancel/Perm table table 18
+    方法 || 可能抛出的异常 || 触发场景
+    insert(TradeFlow f)（回填主键） || DataAccessException（DB-171） || 部分唯一索引 uq_flow_item_active 冲突（同一物品已有进行中流转，BR-05）
+    findActiveByItemId(int itemId) || DataAccessException（DB-172） || 查询物品进行中（APPLYING/AGREED）流转失败
+    findById(int id) || DataAccessException（DB-172） || 查询流转详情失败，查不到返回 Optional.empty()
+    updateStatus(int flowId, String status, String cancelReason, LocalDateTime finishedAt) || DataAccessException（DB-173） || 状态机更新失败（APPLYING→AGREED→DONE / CANCELLED）
+    findByUserId(int userId, String status, int pageNo, int pageSize) || DataAccessException（DB-174） || 我的流转记录分页查询失败，userId 可为卖方或买方
+    countByUserId(int userId, String status) || DataAccessException（DB-174） || 流转记录总数统计失败
+    countByCategoryForPeriod(LocalDateTime from, LocalDateTime to) || DataAccessException（DB-175） || 按时间区间 + 分类统计流转量与金额失败
+=============== D2 cancel/Perm table table 26
+    方法 || 可能抛出的异常 || 触发场景
+    apply(int itemId, int buyerId, String remark) || BusinessRuleException（BR-05：物品已 SOLD 或已有进行中流转；BR-06：非 ON_SALE；不能申请自己的物品） EntityNotFoundException（NF-022：物品不存在） || 发起流转申请，状态 APPLYING，写 operation_log
+    agree(int flowId, int operatorId) || PermissionDeniedException（PERM-021：操作人非出让方） BusinessRuleException（BR-06：流转状态非 APPLYING） || 出让方同意申请，APPLYING→AGREED，物品置 LOCKED
+    confirm(int flowId, int operatorId)（跨表事务） || PermissionDeniedException（PERM-022：操作人非买卖双方） BusinessRuleException（BR-06：状态非 AGREED） TransactionException（TX-0 || 成交确认：item→SOLD、flow→DONE、双方 credit_log + 分数、operation_log，同一事务（BR-07）
+    cancel(int flowId, int operatorId, String reason) || PermissionDeniedException（PERM-023：非出让方且非管理员） EntityNotFoundException（NF-023：流转不存在） || 取消流转，状态→CANCELLED，物品由 LOCKED 回到 ON_SALE
+    history(int userId, String status, int pageNo, int pageSize) || DataAccessException（DB-174） || 我的流转历史（作为买方或卖方），按状态过滤分页
+=============== D2 review table table 27
+    方法 || 可能抛出的异常 || 触发场景
+    review(int flowId, int reviewerId, int score, String content) || BusinessRuleException（BR-08：流转未 DONE / 自评 / 分数不在 1–5） DuplicateEntityException（DUP-041：同一流转同一人重复评价） EntityNotF || 流转完成后评价对方，按分档变更对方信用分（≥4 加 2；≤2 减 5），写 credit_log 快照
+=============== D2 cancel/Perm table table 37
+    实现类 || 实现接口 || 方法数 || 事务要求（是否需显式事务） || 依赖的 DAO（经 DaoFactory）
+    UserServiceImpl || UserService || 8 || register 需事务（user + operation_log）；updateCredit 需事务（credit_score + credit_log）；其余单表操作免事务 || UserDao、CreditLogDao、OperationLogDao、SystemConfigDao
+    ItemServiceImpl || ItemService || 6 || publish 需事务（item + item_image + operation_log）；offShelf 涉及流转取消时需事务；audit 需事务 || ItemDao、ItemImageDao、UserDao、OperationLogDao、TradeFlowDao
+    FavoriteServiceImpl || FavoriteService || 2 || toggle 需事务（favorite 增删 + item.favorite_count 同步） || FavoriteDao、ItemDao
+    TradeServiceImpl || TradeService || 5 || confirm 必须跨表事务（BEGIN IMMEDIATE，校验状态→改 item→改 flow→双方 credit_log + credit_score→operation_log→COMMIT）；agree/can || TradeFlowDao、ItemDao、UserDao、CreditLogDao、OperationLogDao、TradeMessageDao
+    ReviewServiceImpl || ReviewService || 1 || review 需事务（review + 对方 credit_score + credit_log 快照 + operation_log） || ReviewDao、TradeFlowDao、UserDao、CreditLogDao、OperationLogDao
+    StatisticServiceImpl || StatisticService || 3 || 只读，不开启事务；导出前先查询再写文件，文件失败抛 IOException 不污染数据 || ItemDao、TradeFlowDao、SystemConfigDao
+    AdminServiceImpl || AdminService || 3 || addCategory/toggleCategory 需事务（category + operation_log）；recentLogs 只读 || CategoryDao、OperationLogDao
+=============== D2 cancel/Perm table table 38
+    方法 || 业务规则（必须实现） || 事务 || 失败抛出
+    UserService.register || 按 BR-01 校验用户名 4–20 位 [A-Za-z0-9_]、密码 8–20 位含字母与数字、学号 8–12 位数字；校验唯一性；PasswordUtil 生成 16 字节盐并 PBKDF2WithHmacSHA2 || 是（user + operation_log） || ValidationException / DuplicateEntityException / TransactionException
+    UserService.login || 按用户名查用户；先判 locked_until 是否晚于当前时间（BR-03）；校验摘要；失败 fail_count+1，达到 5 次写 locked_until=now+15min；成功重置 fail_count、写  || 是（失败计数 + 日志） || AuthenticationException / AccountLockedException
+    UserService.changePassword || 校验原密码摘要；新密码按 BR-01 校验；更新 password_hash 与 salt；清空 fail_count/locked_until；写日志 || 是 || AuthenticationException / ValidationException / EntityNotFoundException
+    UserService.findById || 按主键查询；不存在抛 NF-001；返回对象不得包含 password_hash/salt 的日志输出 || 否 || EntityNotFoundException
+    UserService.queryUsers || 管理员分页查询用户；空结果返回空列表；pageSize 上限 100 || 否 || DataAccessException
+    UserService.freezeUser || 校验操作人角色为 ADMIN（PERM-001）；禁止冻结自己（BR-10）；目标状态置 FROZEN；写 operation_log || 是 || PermissionDeniedException / BusinessRuleException
+    UserService.unfreezeUser || 校验操作人为 ADMIN；目标状态恢复 ACTIVE；写日志 || 是 || PermissionDeniedException
+    UserService.updateCredit || delta 加到当前分数后必须落在 [0,150]（BR-04），超出则截断或抛 BR 异常（约定：抛异常由调用方决定）；更新 credit_score；插入 credit_log（含 delta、score_after || 是（score + log） || BusinessRuleException
+    ItemService.publish || 校验 BR-04 信用分 ≥60；校验 BR-12 图片数量/类型；事务内写 item（回填 id）→ 生成相对路径 data/images/{itemId}/{uuid}.jpg 并 batchInsert → 写 o || 是（item + image + log） || ValidationException / BusinessRuleException / TransactionException
+    ItemService.updateItem || 仅发布者（或管理员）可改（PERM-011）；SOLD 状态不可改；标题/描述/价格按 BR-01/BR-12 复校；updated_at 刷新 || 是 || PermissionDeniedException / EntityNotFoundException / ValidationException
+    ItemService.offShelf || 发布者本人或 ADMIN 可下架；状态置 OFF_SHELF 并写 audit_remark；若存在进行中流转，取消流转并通知对方（BR-10） || 是（item + flow + msg + log） || PermissionDeniedException / EntityNotFoundException
+    ItemService.search || 把 ItemQuery 交给排序策略生成 ORDER BY；分页参数纠正；委托 ItemDao.search + countSearch 组装 PageResult || 否 || DataAccessException
+    ItemService.detail || 查不到抛 NF-012；返回前调用 increaseViewCount(itemId) || 否（浏览数自增允许非事务） || EntityNotFoundException
+    ItemService.audit || 仅 ADMIN（PERM-013）；pass=true → ON_SALE 并记 published_at；pass=false → REJECTED 并写 remark；写 operation_log || 是 || PermissionDeniedException / BusinessRuleException
+    FavoriteService.toggle || 查询 FavoriteDao.exists：存在则 delete 并 delta=-1；不存在则 insert 并 delta=+1；同步 item.favorite_count 且不小于 0（BR-09）；返回 tog || 是（favorite + 计数） || DataAccessException / EntityNotFoundException
+    FavoriteService.listByUser || 按用户查询收藏物品列表（join item，过滤已删除物品） || 否 || DataAccessException
+    TradeService.apply || 物品必须 ON_SALE（BR-06）；不能申请自己的物品；物品无进行中流转（BR-05）；写 trade_flow（APPLYING）；写 operation_log || 是 || BusinessRuleException / EntityNotFoundException
+    TradeService.agree || 仅出让方可同意（PERM-021）；流转状态必须 APPLYING（BR-06）；flow→AGREED，item→LOCKED；写日志 || 是 || PermissionDeniedException / BusinessRuleException
+    TradeService.confirm || 仅买卖双方可确认（PERM-022）；状态必须 AGREED（BR-06）；**跨表事务**：BEGIN IMMEDIATE → item.status=SOLD → trade_flow.status=DONE + f || 是（必须，5 张表） || PermissionDeniedException / BusinessRuleException / TransactionException
+    TradeService.cancel || 出让方或 ADMIN 可取消（PERM-023）；flow→CANCELLED 并记 cancel_reason；item 由 LOCKED 回 ON_SALE；写日志 || 是 || PermissionDeniedException / EntityNotFoundException
+    TradeService.history || 按 userId 查询作为买方或卖方的流转记录，按 status 过滤、分页；空结果返回空列表 || 否 || DataAccessException
+    ReviewService.review || 流转必须 DONE（BR-08）；reviewer 必须是该流转参与方且不能自评；score ∈ [1,5]；同一 (flow_id, reviewer_id) 唯一；事务内插入 review → 按分档更新对方信用分（ || 是（review + credit + log） || BusinessRuleException / DuplicateEntityException / TransactionException
+    StatisticService.statisticsByCategory || 按时间区间查询 TradeFlowDao.countByCategoryForPeriod；无数据返回空列表，不抛异常 || 否（只读） || DataAccessException
+    StatisticService.carbonReduction || 对每类物品取 CarbonFactorStrategy 的系数（来自 system_config 的 carbon.factor.*），减排量=数量×系数；缺系数抛 BR-031 || 否（只读） || BusinessRuleException / DataAccessException
+    StatisticService.exportCsv || 先查询统计行；再经 AbstractCsvExporter 写 TARGET 指定路径；UTF-8（带 BOM 便于 Excel 打开）；返回绝对路径；文件不可写抛 IOException || 否（先查后写） || IOException / DataAccessException
+    AdminService.addCategory || 操作人必须 ADMIN（PERM-051）；同一父分类下名称唯一（DUP-051）；最多两级（父分类不得再有父）；写 operation_log || 是 || DuplicateEntityException / PermissionDeniedException
+    AdminService.toggleCategory || 操作人必须 ADMIN；分类存在；enabled 取反/置值；停用后检索与发布均不可见；写日志 || 是 || PermissionDeniedException / EntityNotFoundException
+    AdminService.recentLogs || 操作人必须 ADMIN；按 id 倒序取最近 limit 条；limit 上限 500 || 否 || PermissionDeniedException / DataAccessException
+=============== D2 review table table 38
+    方法 || 业务规则（必须实现） || 事务 || 失败抛出
+    UserService.register || 按 BR-01 校验用户名 4–20 位 [A-Za-z0-9_]、密码 8–20 位含字母与数字、学号 8–12 位数字；校验唯一性；PasswordUtil 生成 16 字节盐并 PBKDF2WithHmacSHA2 || 是（user + operation_log） || ValidationException / DuplicateEntityException / TransactionException
+    UserService.login || 按用户名查用户；先判 locked_until 是否晚于当前时间（BR-03）；校验摘要；失败 fail_count+1，达到 5 次写 locked_until=now+15min；成功重置 fail_count、写  || 是（失败计数 + 日志） || AuthenticationException / AccountLockedException
+    UserService.changePassword || 校验原密码摘要；新密码按 BR-01 校验；更新 password_hash 与 salt；清空 fail_count/locked_until；写日志 || 是 || AuthenticationException / ValidationException / EntityNotFoundException
+    UserService.findById || 按主键查询；不存在抛 NF-001；返回对象不得包含 password_hash/salt 的日志输出 || 否 || EntityNotFoundException
+    UserService.queryUsers || 管理员分页查询用户；空结果返回空列表；pageSize 上限 100 || 否 || DataAccessException
+    UserService.freezeUser || 校验操作人角色为 ADMIN（PERM-001）；禁止冻结自己（BR-10）；目标状态置 FROZEN；写 operation_log || 是 || PermissionDeniedException / BusinessRuleException
+    UserService.unfreezeUser || 校验操作人为 ADMIN；目标状态恢复 ACTIVE；写日志 || 是 || PermissionDeniedException
+    UserService.updateCredit || delta 加到当前分数后必须落在 [0,150]（BR-04），超出则截断或抛 BR 异常（约定：抛异常由调用方决定）；更新 credit_score；插入 credit_log（含 delta、score_after || 是（score + log） || BusinessRuleException
+    ItemService.publish || 校验 BR-04 信用分 ≥60；校验 BR-12 图片数量/类型；事务内写 item（回填 id）→ 生成相对路径 data/images/{itemId}/{uuid}.jpg 并 batchInsert → 写 o || 是（item + image + log） || ValidationException / BusinessRuleException / TransactionException
+    ItemService.updateItem || 仅发布者（或管理员）可改（PERM-011）；SOLD 状态不可改；标题/描述/价格按 BR-01/BR-12 复校；updated_at 刷新 || 是 || PermissionDeniedException / EntityNotFoundException / ValidationException
+    ItemService.offShelf || 发布者本人或 ADMIN 可下架；状态置 OFF_SHELF 并写 audit_remark；若存在进行中流转，取消流转并通知对方（BR-10） || 是（item + flow + msg + log） || PermissionDeniedException / EntityNotFoundException
+    ItemService.search || 把 ItemQuery 交给排序策略生成 ORDER BY；分页参数纠正；委托 ItemDao.search + countSearch 组装 PageResult || 否 || DataAccessException
+    ItemService.detail || 查不到抛 NF-012；返回前调用 increaseViewCount(itemId) || 否（浏览数自增允许非事务） || EntityNotFoundException
+    ItemService.audit || 仅 ADMIN（PERM-013）；pass=true → ON_SALE 并记 published_at；pass=false → REJECTED 并写 remark；写 operation_log || 是 || PermissionDeniedException / BusinessRuleException
+    FavoriteService.toggle || 查询 FavoriteDao.exists：存在则 delete 并 delta=-1；不存在则 insert 并 delta=+1；同步 item.favorite_count 且不小于 0（BR-09）；返回 tog || 是（favorite + 计数） || DataAccessException / EntityNotFoundException
+    FavoriteService.listByUser || 按用户查询收藏物品列表（join item，过滤已删除物品） || 否 || DataAccessException
+    TradeService.apply || 物品必须 ON_SALE（BR-06）；不能申请自己的物品；物品无进行中流转（BR-05）；写 trade_flow（APPLYING）；写 operation_log || 是 || BusinessRuleException / EntityNotFoundException
+    TradeService.agree || 仅出让方可同意（PERM-021）；流转状态必须 APPLYING（BR-06）；flow→AGREED，item→LOCKED；写日志 || 是 || PermissionDeniedException / BusinessRuleException
+    TradeService.confirm || 仅买卖双方可确认（PERM-022）；状态必须 AGREED（BR-06）；**跨表事务**：BEGIN IMMEDIATE → item.status=SOLD → trade_flow.status=DONE + f || 是（必须，5 张表） || PermissionDeniedException / BusinessRuleException / TransactionException
+    TradeService.cancel || 出让方或 ADMIN 可取消（PERM-023）；flow→CANCELLED 并记 cancel_reason；item 由 LOCKED 回 ON_SALE；写日志 || 是 || PermissionDeniedException / EntityNotFoundException
+    TradeService.history || 按 userId 查询作为买方或卖方的流转记录，按 status 过滤、分页；空结果返回空列表 || 否 || DataAccessException
+    ReviewService.review || 流转必须 DONE（BR-08）；reviewer 必须是该流转参与方且不能自评；score ∈ [1,5]；同一 (flow_id, reviewer_id) 唯一；事务内插入 review → 按分档更新对方信用分（ || 是（review + credit + log） || BusinessRuleException / DuplicateEntityException / TransactionException
+    StatisticService.statisticsByCategory || 按时间区间查询 TradeFlowDao.countByCategoryForPeriod；无数据返回空列表，不抛异常 || 否（只读） || DataAccessException
+    StatisticService.carbonReduction || 对每类物品取 CarbonFactorStrategy 的系数（来自 system_config 的 carbon.factor.*），减排量=数量×系数；缺系数抛 BR-031 || 否（只读） || BusinessRuleException / DataAccessException
+    StatisticService.exportCsv || 先查询统计行；再经 AbstractCsvExporter 写 TARGET 指定路径；UTF-8（带 BOM 便于 Excel 打开）；返回绝对路径；文件不可写抛 IOException || 否（先查后写） || IOException / DataAccessException
+    AdminService.addCategory || 操作人必须 ADMIN（PERM-051）；同一父分类下名称唯一（DUP-051）；最多两级（父分类不得再有父）；写 operation_log || 是 || DuplicateEntityException / PermissionDeniedException
+    AdminService.toggleCategory || 操作人必须 ADMIN；分类存在；enabled 取反/置值；停用后检索与发布均不可见；写日志 || 是 || PermissionDeniedException / EntityNotFoundException
+    AdminService.recentLogs || 操作人必须 ADMIN；按 id 倒序取最近 limit 条；limit 上限 500 || 否 || PermissionDeniedException / DataAccessException
+=============== D2 cancel/Perm table table 40
+    窗体类 || 职责 || 依赖的 Service 方法 || 关键控件与交互
+    LoginFrame（含注册页签） || 登录 / 注册入口；展示登录失败次数与锁定提示 || UserService.login、UserService.register || JTextField 用户名、JPasswordField 密码、登录/注册按钮、角色提示、剩余锁定分钟数标签
+    MainFrame || 主界面容器：菜单栏、导航、CardLayout 卡片区、状态栏；按角色渲染菜单 || UserService.findById（当前用户与信用分）、TradeMessageDao.countUnread（经 Controller） || JMenuBar、JToolBar、左侧 JList 导航、状态栏显示“当前用户 / 信用分 / 未读数”
+    PublishItemFrame || 发布与修改物品；分类二级联动；图片选择与预览 || ItemService.publish、ItemService.updateItem、CategoryDao.findEnabled/findByParentId（经 Controller） || JComboBox 分类、JSpinner 成色 1–10、JTextArea 描述、JFileChooser（jpg/png、≤2MB）、图片缩略图列表
+    SearchFrame || 检索筛选、排序、分页、查看详情、收藏 toggle || ItemService.search、ItemService.detail、FavoriteService.toggle || 关键词框、分类下拉、价格区间、流转方式、排序下拉（对应 4 种策略）、JTable 结果、分页按钮、收藏按钮
+    MyItemFrame || 我的物品：在售/已售/下架列表，修改、下架、查看流转 || ItemService.search（ownerId 条件）、ItemService.offShelf、ItemService.updateItem || 状态页签、JTable、右键菜单（修改/下架）、下架二次确认
+    TradeFrame || 流转申请、同意、确认成交、取消、沟通消息、历史记录 || TradeService.apply/agree/confirm/cancel/history、ReviewService.review || 流转列表（状态列）、操作按钮按状态置灰（BR-06）、确认成交二次确认、消息面板（JTextArea + 发送）
+    ReviewFrame || 对已完成流转的对方评分与评价 || TradeService.history（筛选 DONE）、ReviewService.review || 星级选择（1–5）、评价文本域（≤200 字）、提交按钮（成功后入口隐藏，BR-08）
+    StatisticFrame || 分类统计表、减排估算、CSV 导出 || StatisticService.statisticsByCategory、carbonReduction、exportCsv || JTable 统计表、日期区间选择、减排总量标签、导出按钮 + JFileChooser 选择保存路径
+    AdminFrame || 用户管理、物品审核/下架、分类维护、操作日志、全平台统计 || UserService.queryUsers/freezeUser/unfreezeUser、ItemService.audit/offShelf、AdminService.addCategory/toggleCateg || JTabbedPane 五个页签（用户/物品/分类/日志/统计）、表格 + 操作按钮、审核备注输入框
+=============== D2 main-class table table 41
+    项 || 要求 || 验收方式
+    pom.xml 坐标 || groupId=edu.campus / artifactId=green-campus / version=1.0.0；packaging=jar || mvn help:evaluate 或人工核对（本机无 Maven，须说明验证方式）
+    编译器 || maven.compiler.release=17；源码 UTF-8；禁止 Java 18+ 语法 || 代码审查 + CI/本机 javac --release 17 验证
+    依赖 || xerial sqlite-jdbc（唯一运行时第三方依赖）；JUnit 5（test scope）；Swing 属 JDK 无需依赖 || mvn dependency:tree 输出（或人工核对 pom）
+    可执行 jar || 使用 maven-shade-plugin 生成 green-campus-1.0.0.jar，Main-Class=edu.campus.recycle.ui.MainApp（启动入口） || java -jar green-campus-1.0.0.jar 可启动；无 Maven 环境时说明验证限制
+    资源打包 || db/schema.sql、db/seed-data.sql 放入 src/main/resources/db；图片目录 data/images 运行时创建 || 解压 jar 检查资源路径；首次启动自动建库
+    数据库 || greencampus.db 位于程序运行目录；启动时检测不存在则执行 schema.sql + seed-data.sql || 删除 db 后重启可自举；Python sqlite3 实跑脚本校验（本机无 sqlite3 CLI）
+    运行环境 || JDK 17+；无需安装数据库；Windows 桌面双击运行（可附 start.bat） || 在干净目录解压 jar + 双击验证
+    交付清单 || jar 包、db 脚本、README 部署说明、源代码工程、JUnit 用例、演示 PPT 与视频 || 对照题目书第七节逐项勾选
+=============== D2 transaction text
+   [88] 禁止使用通配符 import（import edu.campus.recycle.*），便于 R1～R8 规则用静态检查工具定位依赖。
+   [89] DAO 实现统一继承 AbstractJdbcDao（模板方法），复用连接获取、资源释放、异常转换与事务内的 executeInTransaction。
+   [90] util 包内的 RowMapper<T>、ConnectionCallback<T>、TransactionCallback<T> 均为 @FunctionalInterface 回调接口：RowMapper 负责 ResultSet→实体映射，ConnectionCallback / TransactionCallback 是 AbstractJdbcDao 模板方法与 DbUtil 事务方法的可变部分，签名见 5.7 节。
+   [91] DaoFactory 与 ServiceFactory 的包归属说明：契约第 8 节将其列为设计模式落点，类名已固定；本设计将两者放入 util 包（与 DbUtil、ConfigManager 同属基础设施），若迭代二评审后统一移到 config 或新建 factory 包，须由 Lead 修订契约后同步 D2/D3，禁止各自为政。
+   [92] 测试代码位于 src/test/java 下同名包，命名 XxxTest；测试类不属于 11 个业务包，不计入包结构约束。
+   [267] 代码 7-1  单例骨架（DbUtil；ConfigManager 同构）
+   [268] public final class DbUtil {
+    private DbUtil() { }
+    private static class Holder { private static final DbUtil INSTANCE = new DbUtil(); }
+    public static DbUtil getInstance() { return Holder.INSTANCE; }
+    public Connection getConnection() throws DataAc
+   [269] 涉及类：DbUtil、ConfigManager（util/config 包）、AbstractJdbcDao（调用 DbUtil 取连接）。可扩展点：若后续引入连接池（如 HikariCP，需评估课程“禁止重量级框架”约束），只改 DbUtil 内部实现，调用方与 DAO 均无感知；配置热更新只需在 ConfigManager 增加 reload()。
+   [270] 7.2  工厂（Factory）
+   [271] 问题：上层若直接 new UserDaoImpl()、new TradeServiceImpl()，则在单元测试中无法替换为桩实现，且 DAO 实现类名变化会波及所有调用方——这正是依赖倒置原则要解决的问题。
+   [317] 
+   [318] 事务实现的统一骨架由 AbstractJdbcDao.executeInTransaction 提供（第 7.5 节），Service 层调用形式为：DbUtil.beginTransaction 后依次调用 DAO 方法，全部成功则 commit，捕获任意 AppException 则 rollback 并继续上抛；禁止在事务中途 return 而不提交，也禁止把 rollback 写在 catch 之外的分支。
+   [319] 8.4  JUnit 5 测试点清单
+   [320] 测试分为单元测试（桩 DAO，不连库）与集成测试（内存 SQLite，执行真实 SQL）。表 8-3 给出迭代二开工即应编写的28 条用例名与断言要点，覆盖 BR-01～BR-12 中可由业务层验证的部分；后续迭代可继续追加，但不得删减既有用例。
+   [321] 表 8-3  JUnit 5 测试点清单（28 条）
+=============== D2 test db text
+   [271] 问题：上层若直接 new UserDaoImpl()、new TradeServiceImpl()，则在单元测试中无法替换为桩实现，且 DAO 实现类名变化会波及所有调用方——这正是依赖倒置原则要解决的问题。
+   [272] 方案：DaoFactory 与 ServiceFactory 按需返回接口实例：DAO 由枚举/Class 描述符决定（便于替换为内存实现），Service 由无参工厂方法返回单例实现（ServiceImpl 内部通过 DaoFactory 获取 DAO）；调用方只声明接口类型。
+   [273] 代码 7-2  工厂骨架（DaoFactory / ServiceFactory）
+   [274] public final class DaoFactory {
+    private DaoFactory() { }
+    public static UserDao userDao()   { return new UserDaoImpl(DbUtil.getInstance()); }
+    public static ItemDao itemDao()   { return new ItemDaoImpl(DbUtil.getInstance()); }
+    public static Trade
+   [275] 涉及类：DaoFactory、ServiceFactory、11 个 DaoImpl、7 个 ServiceImpl。可扩展点：新增 DAO 只需在工厂加一行并实现接口；替换某个 DAO 为“带缓存的实现”不影响 Service；测试通过 setXxx 注入桩对象实现零数据库单元测试。
+   [319] 8.4  JUnit 5 测试点清单
+   [320] 测试分为单元测试（桩 DAO，不连库）与集成测试（内存 SQLite，执行真实 SQL）。表 8-3 给出迭代二开工即应编写的28 条用例名与断言要点，覆盖 BR-01～BR-12 中可由业务层验证的部分；后续迭代可继续追加，但不得删减既有用例。
+   [321] 表 8-3  JUnit 5 测试点清单（28 条）
+   [322] 
+   [323] 测试编写约定：类名 XxxServiceTest；方法名采用“方法_场景_期望”三段式；每条用例至少一个断言；涉及事务的用例必须断言回滚后的数据库状态（TC-12、TC-20），不能只断言异常类型；测试数据用 @BeforeEach 构造，禁止用例之间共享可变状态；内存 SQLite 集成测试统一使用 jdbc:sqlite::memory: 并在 @BeforeEach 执行 schema.sql。
+   [324] 8.5  编码与提交约定
+   [325] 每个 public 方法必须有 Javadoc，写明 @throws 的业务含义与对应 BR 编号。
+   [326] 异常只抛不吞；catch 块只允许两种形态：rollback 后重新抛出，或包装为更具体的 AppException 并保留 cause。
+=============== D2 injection text
+   [273] 代码 7-2  工厂骨架（DaoFactory / ServiceFactory）
+   [274] public final class DaoFactory {
+    private DaoFactory() { }
+    public static UserDao userDao()   { return new UserDaoImpl(DbUtil.getInstance()); }
+    public static ItemDao itemDao()   { return new ItemDaoImpl(DbUtil.getInstance()); }
+    public static Trade
+   [275] 涉及类：DaoFactory、ServiceFactory、11 个 DaoImpl、7 个 ServiceImpl。可扩展点：新增 DAO 只需在工厂加一行并实现接口；替换某个 DAO 为“带缓存的实现”不影响 Service；测试通过 setXxx 注入桩对象实现零数据库单元测试。
+   [276] 7.3  策略（Strategy）
+=============== D2 abstract dao text
+   [88] 禁止使用通配符 import（import edu.campus.recycle.*），便于 R1～R8 规则用静态检查工具定位依赖。
+   [89] DAO 实现统一继承 AbstractJdbcDao（模板方法），复用连接获取、资源释放、异常转换与事务内的 executeInTransaction。
+   [90] util 包内的 RowMapper<T>、ConnectionCallback<T>、TransactionCallback<T> 均为 @FunctionalInterface 回调接口：RowMapper 负责 ResultSet→实体映射，ConnectionCallback / TransactionCallback 是 AbstractJdbcDao 模板方法与 DbUtil 事务方法的可变部分，签名见 5.7 节。
+   [91] DaoFactory 与 ServiceFactory 的包归属说明：契约第 8 节将其列为设计模式落点，类名已固定；本设计将两者放入 util 包（与 DbUtil、ConfigManager 同属基础设施），若迭代二评审后统一移到 config 或新建 factory 包，须由 Lead 修订契约后同步 D2/D3，禁止各自为政。
+   [92] 测试代码位于 src/test/java 下同名包，命名 XxxTest；测试类不属于 11 个业务包，不计入包结构约束。
+   [121] 
+   [122] BaseDao 的价值在于配合第 7 章模板方法：AbstractJdbcDao 为 5 个方法各提供一次 JDBC 骨架实现，子类只需实现 SQL 文本、参数绑定与行映射三个抽象方法，从而消除 11 个 DAO 中重复的 try-catch-finally。
+   [123] 5.3  DAO 接口清单（11 个）
+   [124] 11 个 DAO 接口按“一张表一个接口”拆分，均位于 edu.campus.recycle.dao 包。其中“extends BaseDao<实体, Integer>”这一继承关系是本设计的补充（契约未逐条书写，但 BaseDao 的存在以被继承为前提），标记为【建议补充】；它不新增任何方法，只复用 5 个通用 CRUD 方法与模板方法的骨架。
+   [225] 5.7  util 回调接口（RowMapper / ConnectionCallback / TransactionCallback）
+   [226] 5.1 节约定“接口只声明做什么，不出现 SQL、Swing、Connection、ResultSet”，但 DAO 实现与事务模板方法必须接触 JDBC 对象。为把“必须接触 JDBC、又必须由模板方法统一管理”的代码抽离，util 包定义 3 个 @FunctionalInterface 回调接口：调用方只提供“一行或一段 JDBC 逻辑”，连接的获取、事务的提交/回滚与资源释放由 AbstractJdbcDao / DbUtil 统一完成（模板方法模式，见 7.5 节）。这三个接口是 D3 类图页 2 中 A
+   [227] 代码 5-20  RowMapper 行映射回调（签名取自 code 的 util 包）
+   [228] @FunctionalInterface
+public interface RowMapper<T> {
+    T mapRow(ResultSet rs) throws SQLException;
+}
+   [268] public final class DbUtil {
+    private DbUtil() { }
+    private static class Holder { private static final DbUtil INSTANCE = new DbUtil(); }
+    public static DbUtil getInstance() { return Holder.INSTANCE; }
+    public Connection getConnection() throws DataAc
+   [269] 涉及类：DbUtil、ConfigManager（util/config 包）、AbstractJdbcDao（调用 DbUtil 取连接）。可扩展点：若后续引入连接池（如 HikariCP，需评估课程“禁止重量级框架”约束），只改 DbUtil 内部实现，调用方与 DAO 均无感知；配置热更新只需在 ConfigManager 增加 reload()。
+   [270] 7.2  工厂（Factory）
+   [271] 问题：上层若直接 new UserDaoImpl()、new TradeServiceImpl()，则在单元测试中无法替换为桩实现，且 DAO 实现类名变化会波及所有调用方——这正是依赖倒置原则要解决的问题。
+   [289] 问题：JDBC 代码天然重复——拿连接、创建 PreparedStatement、绑定参数、执行、处理 ResultSet、在 finally 中关闭资源、把 SQLException 转成 DataAccessException。11 个 DAO 若各写一遍，既是代码坏味道（重复代码），也容易漏关资源导致连接泄漏。
+   [290] 方案：抽象类 AbstractJdbcDao 定义查询/更新的执行骨架（final 方法），把“SQL 文本、参数绑定、行映射”留给子类实现（抽象方法）；AbstractCsvExporter 以 final export 固定“写表头—写数据行—落盘—异常转换”流程，子类只提供数据行。两个模板方法分别消除数据访问层与导出层的重复。
+   [291] 代码 7-5  模板方法骨架（AbstractJdbcDao；AbstractCsvExporter 同构）
+   [292] public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
+    protected final <R> R query(String sql, StatementBinder binder, RowMapper<R> mapper) {
+        try (Connection c = DbUtil.getInstance().getConnection();
+             PreparedStatement
+   [293] 涉及类：AbstractJdbcDao（11 个 DAO 实现继承）、AbstractCsvExporter（StatisticCsvExporter 继承）、DbUtil。可扩展点：新增 DAO 自动获得资源释放与异常转换；若要统一加 SQL 耗时日志，只改模板方法一处；模板方法使 DAO 实现类只剩 3 个短方法，便于代码走查。
+   [294] 7.6  建造者（Builder）——备选模式【建议补充】
+   [295] 问题：物品检索条件有 keyword、categoryId、minPrice、maxPrice、tradeType、status、ownerId、sortBy、pageNo、pageSize 共 10 个，其中 8 个可选。若用构造器传参，将出现“10 个参数、一半是 null”的超长参数表，调用处极易把参数位置写错。
+   [317] 
+   [318] 事务实现的统一骨架由 AbstractJdbcDao.executeInTransaction 提供（第 7.5 节），Service 层调用形式为：DbUtil.beginTransaction 后依次调用 DAO 方法，全部成功则 commit，捕获任意 AppException 则 rollback 并继续上抛；禁止在事务中途 return 而不提交，也禁止把 rollback 写在 catch 之外的分支。
+   [319] 8.4  JUnit 5 测试点清单
+   [320] 测试分为单元测试（桩 DAO，不连库）与集成测试（内存 SQLite，执行真实 SQL）。表 8-3 给出迭代二开工即应编写的28 条用例名与断言要点，覆盖 BR-01～BR-12 中可由业务层验证的部分；后续迭代可继续追加，但不得删减既有用例。
+=============== D2 findById text
+=============== D2 carbon keys
+=============== D6 misc text
+   [28] （3）接口与异常基线：维护《迭代一·共享契约-实体与接口基线》，冻结 Service/DAO 方法签名、DTO 结构与异常体系（AppException 及 9 个子类、code 约定），确保三人并行开发不互相阻塞。
+   [29] （4）基础设施：DbUtil（单例连接管理）、ConfigManager（system_config 参数读取）、SecurityUtil（PBKDF2WithHmacSHA256 + 16 字节盐）等公共构件。
+   [30] （5）文档与自查：D1、D5、D6 的撰写与自检（表号连续、编号与契约逐字符一致、字体字号页码），以及交付前的文档齐套性核对。
+   [96] 5.5 Maven 与目录约定
+   [97] 构建工具为 Maven，工程坐标为 edu.campus:green-campus:1.0.0，packaging 为 jar，Java 版本按 `maven.compiler.release=17` 配置（本机 JDK 25 亦通过 --release 17 保证兼容）。主类为 edu.campus.recycle.App；资源与数据目录相对程序目录，不硬编码盘符。依赖版本以成员3 确认后的 pom.xml 为准，下表为建议方案【建议补充】。
+   [98] 表 5-5　Maven 工程与依赖约定（版本建议）
+  schema:119: CHECK (trade_type IN ('SELL','EXCHANGE','FREE')), -- 售卖/交换/赠送
+  schema:126: status          TEXT    NOT NULL DEFAULT 'ON_SALE'
+  schema:185: content      TEXT    NOT NULL,                                            -- 内容 <=300 字
+schema DRAFT lines:
+  schema:127: CHECK (status IN ('DRAFT','PENDING','ON_SALE','LOCKED',
+=============== seed carbon/system_config keys
+  seed:219: (8,  'carbon.factor.book',       '0.8', '教材书籍类减排系数（kgCO2e/本）', '2026-09-01 09:00:00'),
+  seed:220: (9,  'carbon.factor.electronics','12.0','数码配件类减排系数（kgCO2e/件）', '2026-09-01 09:00:00'),
+  seed:221: (10, 'carbon.factor.daily',      '2.5', '生活物资类减排系数（kgCO2e/件）', '2026-09-01 09:00:00'),
+  seed:222: (11, 'carbon.factor.sports',     '1.2', '文体用品类减排系数（kgCO2e/件）', '2026-09-01 09:00:00');
+=============== code: BR codes / Main class / cancel / status default
+  MAIN FILE: edu\campus\recycle\Main.java
+    1: package edu.campus.recycle;
+    41: public final class Main {
+  edu\campus\recycle\exception\BusinessRuleException.java: "BR-04"
+  edu\campus\recycle\exception\BusinessRuleException.java: "BR-000"
+  edu\campus\recycle\service\impl\ItemServiceImpl.java: "BR-04"
+  edu\campus\recycle\service\impl\ItemServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\ItemServiceImpl.java: "BR-10"
+  edu\campus\recycle\service\impl\ItemServiceImpl.java: "BR-10"
+  edu\campus\recycle\service\impl\ItemServiceImpl.java: "BR-10"
+    IS:100: if (item.getPrice() == null) {
+    IS:101: item.setPrice(BigDecimal.ZERO);
+    IS:102: }
+    IS:103: if (item.getPrice().signum() < 0) {
+    IS:104: throw ValidationException.of("价格不能为负数");
+    IS:105: }
+    IS:106: String status = item.getStatus() == null || item.getStatus().trim().isEmpty()
+    IS:107: ? ItemStatus.ON_SALE.getCode() : item.getStatus();
+    IS:108: LocalDateTime now = LocalDateTime.now().withNano(0);
+    IS:109: item.setStatus(status);
+    IS:110: item.setCreatedAt(now);
+    IS:111: item.setUpdatedAt(now);
+    IS:112: item.setPublishedAt(ItemStatus.ON_SALE.getCode().equals(status) ? now : null);
+    IS:113: item.setViewCount(0);
+    IS:114: item.setFavoriteCount(0);
+    IS:115: DbUtil.getInstance().executeInTransaction(conn -> {
+    IS:116: itemDao.insert(item);
+    IS:117: if (!paths.isEmpty()) {
+    IS:118: List<ItemImage> images = new ArrayList<>(paths.size());
+    IS:119: for (int i = 0; i < paths.size(); i++) {
+    IS:120: ItemImage image = new ItemImage();
+  edu\campus\recycle\service\impl\ReviewServiceImpl.java: "BR-08"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-05"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-05"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+  edu\campus\recycle\service\impl\TradeServiceImpl.java: "BR-06"
+    TS:130: }
+    TS:131: 
+    TS:132: @Override
+    TS:133: public void cancel(int flowId, int operatorId, String reason) throws PermissionDeniedException {
+    TS:134: TradeFlow flow = tradeFlowDao.findById(flowId)
+    TS:135: .orElseThrow(() -> EntityNotFoundException.of("流转记录不存在：id=" + flowId));
+    TS:136: boolean participant = Objects.equals(flow.getSellerId(), operatorId)
+    TS:137: || Objects.equals(flow.getBuyerId(), operatorId);
+    TS:138: if (!participant) {
+    TS:139: throw PermissionDeniedException.of("仅交易双方可取消该流转");
+    TS:140: }
+    TS:141: if (!FlowStatus.APPLYING.getCode().equals(flow.getStatus())
+    TS:142: && !FlowStatus.AGREED.getCode().equals(flow.getStatus())) {
+    TS:143: throw BusinessRuleException.of("BR-06", "仅进行中的流转可取消，当前：" + flow.getStatus());
+    TS:144: }
+    TS:145: if (reason == null || reason.trim().isEmpty()) {
+    TS:146: throw BusinessRuleException.of("BR-06", "取消原因不能为空");
+    TS:147: }
+    TS:148: LocalDateTime now = LocalDateTime.now().withNano(0);
+    TS:149: DbUtil.getInstance().executeInTransaction(conn -> {
+    TS:150: tradeFlowDao.updateStatus(flowId, FlowStatus.CANCELLED.getCode(), reason.trim(), now);
+  edu\campus\recycle\service\impl\UserServiceImpl.java: "BR-10"
+  edu\campus\recycle\service\impl\UserServiceImpl.java: "BR-04"

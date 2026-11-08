@@ -1,0 +1,32 @@
+﻿=== ����һ���������� @ C:\Users\wanhe\Desktop\�������\����һ-��Ա1 ===
+
+[1] Word �ĵ�
+
+[2] drawio ͼ
+
+[3] SQL �ű�ʵ��
+
+[4] Maven �Ǽ�
+
+  [PASS] docx 00-�����Լ�����ŷ���.docx �� ����80 ����31 ���22 ҳ������ ����ע����
+  [PASS] docx 01-������˵����.docx �� ����238 ����85 ���63 ҳ������ ����ע����
+  [PASS] docx 02-ģ�黯�����ӿڹ淶.docx �� ����332 ����79 ���45 ҳ������ ����ע����
+  [PASS] docx 05-���ݿ����˵����.docx �� ����929 ����74 ���38 ҳ������ ����ע����
+  [PASS] docx 06-С��ֹ������ܵ����ƻ�.docx �� ����114 ����35 ���18 ҳ������ ����ע����
+  [PASS] drawio 03-UML��ͼ.drawio �� ��С175KB ��ҳ2 mxCell412 ����312 ��96
+  [PASS] drawio 04-UMLʱ��ͼ.drawio �� ��С105KB ��ҳ6 mxCell274 ����151 ��111
+  [PASS] drawio 05-ERͼ.drawio �� ��С67KB ��ҳ1 mxCell162 ����142 ��18
+  [PASS] schema.sql ʵ�� �� ��11�� ȱ�� ����13�� integrity=ok fk_violation=0
+  [PASS] seed-data.sql ���� �� ����: category=10 credit_log=5 favorite=6 item=12 item_image=7 operation_log=7 review=3 system_config=11 trade_flow=4 trade_message=6 user=5
+  [PASS] code �ṹ �� pom.xml�� java�ļ�109�� ��12��
+  [PASS]   �� entity �� ����
+  [PASS]   �� dao �� ����
+  [PASS]   �� service �� ����
+  [PASS]   �� util �� ����
+  [PASS]   �� exception �� ����
+  [PASS]   �� config �� ����
+  [PASS]   �� dto �� ����
+  [PASS]   �� ui �� ����
+  [PASS]   �� controller �� ����
+
+�ϼ� 20 �PASS 20 / FAIL 0

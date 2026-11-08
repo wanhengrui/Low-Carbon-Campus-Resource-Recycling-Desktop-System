@@ -1,0 +1,1104 @@
+《软件构造》分组实验（迭代一）
+低碳校园资源循环流转桌面系统
+GreenCampus Recycle
+D2  模块化设计与接口规范
+（Module Design & Interface Specification）
+
+### [Heading 1] 修订记录
+表 0-1  文档修订记录
+说明：本文件是迭代一的模块化设计与接口规范，是成员2（业务逻辑与测试）、成员3（GUI/复用/交付）并行开工的书面契约。文档中的类名、方法名、参数顺序、返回类型、异常类型均逐字取自《_共享契约-实体与接口基线.md》，任何一方不得单方面修改；确需变更时按契约第 12 节流程由 Lead 修订后广播。本文档不提交基线契约文件本身，但契约内容必须原样体现在文档与代码中。
+
+### [Heading 1] 1  设计目标与原则
+
+### [Heading 2] 1.1  文档定位与范围
+迭代一的总体任务是完成需求规格、UML 建模、数据库表设计与模块化划分。本文档承接需求规格（D1/文档 01）所确认的功能需求，向下约束 UML 类图（D3）、UML 时序图（D4）、数据库表设计（D5）与源代码工程（D7）的构造方式，是迭代二至迭代四的“结构宪法”。
+文档范围严格限定为：分层与依赖规则（第 2 章）、包结构（第 3 章）、模块划分与责任人（第 4 章）、DAO 与 Service 接口签名及异常契约（第 5 章）、异常体系与全局处理策略（第 6 章）、设计模式落点（第 7 章）、成员2与成员3的开工契约（第 8、9 章）、与 D3/D4/D5 的对应关系（第 10 章）。文档不描述具体 SQL 语句、界面像素级布局与测试执行结果，这些分别由 D5、D6 与测试报告承担。
+
+### [Heading 2] 1.2  设计目标
+本系统的设计目标不是“把九个功能做成九个界面”，而是构造一个可在 8 周内由 3 人并行推进、在迭代四可打包交付、在答辩时可被追问设计决策的模块化桌面系统。具体目标如下：
+（1）可替换：所有跨层调用都通过接口完成，替换 DAO 实现（JDBC 换缓存桩）或 Service 实现时不修改调用方代码。
+（2）可测试：Service 只依赖 DAO 接口与实体，JUnit 5 可用桩实现替代真实 SQLite，单元测试无需启动数据库。
+（3）事务边界集中：事务边界唯一地落在 service.impl 层（BR-07），UI 与 DAO 均不出现 commit/rollback。
+（4）防御性：参数校验分两层：controller 做格式校验（BR-01/BR-12），service 做业务规则校验（BR-03～BR-10），非法输入以统一异常体系上抛。
+（5）可交付：面向 Java 17 标准库与 JDBC，不引入 Spring、Hibernate 等重量级框架，保证可编译、可运行、可讲解。
+（6）可扩展：新增一种排序策略或一种减排系数算法时，只新增类而不修改 ItemService；新增一类操作日志监听器时不修改流转业务。
+
+### [Heading 2] 1.3  设计原则
+下述五条原则是本设计的方法论依据，不是口号；表 1-1 给出每条原则在本系统中的具体落点，并给出“违反后的真实后果”，供代码走查（D6）时对照检查。
+表 1-1  设计原则与本系统的落点
+
+### [Heading 2] 1.4  为什么分层，而不是简单 CRUD
+题目书明确禁止“仅做简单 CRUD”。对本系统而言，简单 CRUD 的典型形态是：Swing 窗体按钮的监听器里直接书写 SQL、用 DriverManager 取连接、在 try-catch 中弹 JOptionPane。这种写法在只有一张表、一个用户角色时可以跑通，但本系统存在四个不可回避的复杂度来源：
+（1）跨表事务：流转成交需要同时修改 item、trade_flow、credit_log（双方各一条）与 operation_log 四类表，任一失败必须整体回滚（BR-07）。
+（2）角色权限：普通用户与管理员对同一操作（下架物品、冻结用户）的权限判定不同（BR-10），必须在业务层统一判定，不能依赖界面隐藏按钮。
+（3）审计与日志：注册/登录/发布/审核/流转均须写 operation_log（BR-11），若在每个界面各自写日志，必然遗漏且不可维护。
+（4）并行开发：成员2、成员3 在同一时段分别开发业务逻辑与界面，若没有稳定的接口边界，两人将互相阻塞在“类还没写完”上。
+因此本系统采用分层架构：把“变化的维度”隔离到不同层。表 1-2 从工程维度对比两种构造方式的代价。
+表 1-2  简单 CRUD 与本系统分层架构对照
+结论：分层带来的“多写接口、多写适配代码”的成本是显性的、一次性的；而简单 CRUD 在事务一致性、并行开发与后期重构上的成本是隐性的、持续累积的。对于本系统 11 张表、9 类功能、3 人并行的规模，分层的收益显著大于成本，因此本设计选择分层，并以下述硬性依赖规则保证分层不被逐渐绕过。
+
+### [Heading 1] 2  分层架构
+
+### [Heading 2] 2.1  分层与职责
+系统自上而下分为表现层、控制层、业务层、数据访问层四层，并以实体层与横切包作为公共依赖。各层的职责边界、允许依赖与禁止事项见表 2-1。
+表 2-1  分层职责与依赖约束
+
+### [Heading 2] 2.2  依赖方向图
+依赖方向是分层的核心约束。本系统只允许上层依赖下层，箭头表示“编译期 import 方向”，图中同时给出被禁止的反向依赖与跨层调用。
+图 2-1  分层依赖方向图（只允许上层依赖下层）
+┌───────────────────────────────┐
+                         │  表现层  ui                   │
+                         │  窗体 / 面板 / TableModel     │
+                         └───────────────┬───────────────┘
+                                         │ 只允许调用 controller
+                                         │ 禁止调用 service.impl / dao
+                         ┌───────────────▼───────────────┐
+                         │  控制层  controller           │
+                         │  参数格式校验入口 + 结果封装  │
+                         └───────────────┬───────────────┘
+                                         │ 调用 service 接口
+                         ┌───────────────▼───────────────┐
+                         │  业务层  service (接口)       │
+                         │         service.impl (实现)   │  ← 事务边界唯一落点
+                         └───────────────┬───────────────┘
+                                         │ 调用 dao 接口（经 DaoFactory 获得）
+                         ┌───────────────▼───────────────┐
+                         │  数据访问层  dao (接口)       │
+                         │             dao.impl (JDBC)   │
+                         └───────────────┬───────────────┘
+                                         │ 使用
+                         ┌───────────────▼───────────────┐
+                         │  entity · dto · util ·        │
+                         │  exception · config           │
+                         │  （被所有上层依赖，不反向依赖）│
+                         └───────────────────────────────┘
+ 
+  禁止的反向依赖（静态检查一旦命中，代码走查直接判不合格）：
+    ui            ──✗──▶  dao / service.impl        （跨层 + 反向）
+    controller    ──✗──▶  dao                        （跨层，绕过业务规则）
+    service.impl  ──✗──▶  ui                         （反向，业务层不得出现 Swing）
+    dao.impl      ──✗──▶  service / controller / ui   （反向）
+    entity        ──✗──▶  util / exception 之外的任何层（禁止实体携带行为依赖）
+    exception/util/config ──✗──▶  ui/controller/service/dao（禁止横切包反向依赖）
+依赖方向与契约第 1 节一致：ui → controller → service → dao → (entity, util, exception, config)。需要特别说明两点：其一，service.impl 与 dao.impl 之间不直接 import（实现类之间不互相依赖），service.impl 通过 DaoFactory 取得 DAO 接口实例，从而保持“实现之间无耦合”；其二，config 包虽然处于依赖链末端，但它只提供只读配置常量与读取方法，不含任何业务编排逻辑。
+
+### [Heading 2] 2.3  强制依赖规则
+为把“分层”从示意图变为可检查的约束，制定 8 条强制规则（R1～R8），由成员3 在迭代三、四的代码走查中逐条核对。
+表 2-2  强制依赖规则清单
+上述规则中 R3 与 R5 最容易被“赶进度”时绕过：一旦某处直接 new 实现类，单元测试将无法注入桩对象；一旦某处擅自提交事务，BR-07 的原子性就无法保证。因此两条规则被列为迭代二开工前的自检项。
+
+### [Heading 2] 2.4  一次“发布闲置物品”请求的分层流转
+为使分层不停留在图上，下面用发布物品这一用例说明一次真实请求如何贯穿各层（实现见 D4 时序图场景 2）：
+（1）表现层：用户在 PublishItemFrame 填写标题、分类、价格、成色并选择图片，点击“发布”；界面只读取控件值，不判断业务规则。
+（2）控制层：PublishItemFrame 把控件值封装为 Item 实体与 List<String> 图片路径，调用 ItemController.publish(item, imagePaths)；controller 用 Validator 做格式校验（标题 2–50 字、价格 ≥0、图片 ≤5 张且 jpg/png、单张 ≤2MB）。
+（3）控制层到业务层：ItemController 调用 ItemService.publish(item, imagePaths)（接口，非实现类）；捕获 AppException 后按 code 映射为界面提示文案。
+（4）业务层：ItemServiceImpl 校验 BR-04（信用分 < 60 拒绝发布）与 BR-05（物品状态合法性），开启事务，调用 ItemDao.insert 回填 itemId，再调用 ItemImageDao.batchInsert 写入图片记录，提交事务，最后写 operation_log（PUBLISH_ITEM）。
+（5）数据访问层：ItemDaoImpl 用 PreparedStatement 执行 INSERT 并回填自增主键；ItemImageDaoImpl 批量插入图片相对路径 data/images/{itemId}/{uuid}.jpg。两者均只做 SQL，不做业务判断。
+（6）异常回流：任一步骤抛 DataAccessException 时，业务层回滚并包装为 TransactionException；界面只捕获 AppException 并按 code 提示，未捕获异常写日志与 operation_log。
+该用例完整映射了第 5 章的 ItemService.publish 签名、第 6 章的异常传播路径以及第 7 章工厂模式（DAO 实例获取）与观察者模式（操作日志）的落点。
+
+### [Heading 2] 2.5  横切包的组织方式
+dto、util、exception、config 不作为“层”参与调用链，而是被各层共同依赖的横切资产，其组织约定如下：
+dto：仅承载数据：ItemQuery 组合检索条件、PageResult<T> 统一分页、StatisticsDTO 作统计行、UserCreditDTO / TradeDetailDTO / LoginResult 作聚合视图；不含行为逻辑。
+util：仅提供无状态静态方法或单例：DbUtil（连接与事务）、PasswordUtil（PBKDF2）、Validator（正则与区间校验）、CsvExporter（导出）、ConfigManager（配置单例）、DaoFactory / ServiceFactory（工厂）。
+exception：AppException 为根，9 个子类按“校验/重复/未找到/认证/锁定/权限/业务规则/数据访问/事务”分工；UI 只捕获根类型。
+config：DbConfig 保存 JDBC URL 与连接参数，AppConfig 保存应用级常量（分页默认值、图片目录等）；两者只读，配置项取值优先从 system_config 表读取并由 ConfigManager 缓存。
+
+### [Heading 1] 3  包结构
+
+### [Heading 2] 3.1  包清单
+根包固定为 edu.campus.recycle，共 11 个包（含 2 个实现子包），与契约第 1 节完全一致，不得新增、改名或删除。各包的职责、允许依赖与典型类见表 3-1。
+表 3-1  包结构表（11 个包）
+
+### [Heading 2] 3.2  包间依赖矩阵
+表 3-2 以矩阵形式给出包与包之间的允许依赖（√ 允许，空 禁止），行表示“依赖方”，列表示“被依赖方”。矩阵中不存在对称的 √，即不允许循环依赖。
+表 3-2  包间依赖矩阵（行依赖列）
+注：ui 对 config 的依赖仅用于读取分页默认值等只读常量；entity 不依赖任何包；exception/config 位于依赖链末端。若出现表中为空的组合，即判定为越界依赖，须在代码走查中修正。
+
+### [Heading 2] 3.3  包内文件组织约定
+为避免“一个文件塞多个公开类”导致的审查困难，包内文件遵循以下约定：
+每个 .java 文件只含一个 public 顶层类型，文件名与类名一致；枚举各自独立成文件，不嵌套在实体内部。
+禁止使用通配符 import（import edu.campus.recycle.*），便于 R1～R8 规则用静态检查工具定位依赖。
+DAO 实现统一继承 AbstractJdbcDao（模板方法），复用连接获取、资源释放、异常转换与事务内的 executeInTransaction。
+util 包内的 RowMapper<T>、ConnectionCallback<T>、TransactionCallback<T> 均为 @FunctionalInterface 回调接口：RowMapper 负责 ResultSet→实体映射，ConnectionCallback / TransactionCallback 是 AbstractJdbcDao 模板方法与 DbUtil 事务方法的可变部分，签名见 5.7 节。
+DaoFactory 与 ServiceFactory 的包归属说明：契约第 8 节将其列为设计模式落点，类名已固定；本设计将两者放入 util 包（与 DbUtil、ConfigManager 同属基础设施），若迭代二评审后统一移到 config 或新建 factory 包，须由 Lead 修订契约后同步 D2/D3，禁止各自为政。
+测试代码位于 src/test/java 下同名包，命名 XxxTest；测试类不属于 11 个业务包，不计入包结构约束。
+
+### [Heading 1] 4  模块划分
+
+### [Heading 2] 4.1  划分原则
+包是按“技术分层”切分的，模块是按“业务能力”切分的，二者交叉构成系统的二维结构。模块划分遵循三条原则：（1）一个模块对应一组高内聚的用例，可独立指派负责人；（2）模块之间只通过 Service 接口交互，不共享实现类；（3）每个模块必须能映射到需求编号（FR-xx）与业务规则编号（BR-xx），以便测试追踪。
+
+### [Heading 2] 4.2  模块清单
+系统划分为 8 个业务/基础设施模块，见表 4-1。其中“基础设施模块”不直接对应用户可见功能，但提供分层骨架、异常、日志与工具，由成员1 负责，其余业务模块由成员2 实现业务、成员3 实现界面。
+表 4-1  模块划分表（8 个模块）
+
+### [Heading 2] 4.3  模块依赖与接口协作
+模块之间不允许直接调用对方的实现类，只能通过表 4-2 中列出的 Service 接口方法协作。表中“协作方式”一列给出了跨模块调用的唯一合法路径，开发时若需要新的跨模块协作，必须先在本表登记并报 Lead。
+表 4-2  模块间协作关系
+
+### [Heading 2] 4.4  需求与业务规则追踪
+模块划分的合理性最终要由“需求是否都有归属”来检验。表 4-3 把题目书中的核心功能与契约第 9 节的业务规则映射到模块与实现类，确保没有需求悬空、也没有模块无需求来源。
+表 4-3  需求/业务规则到模块的追踪表
+说明：FR/NFR/BR 编号体系全组统一，本表只使用契约第 2 节与第 9 节已定义的编号；若需求规格文档（D1）新增编号，须在本表追加行，不得在本表之外另起编号。
+
+### [Heading 1] 5  接口清单
+本章是成员2、成员3 并行开发的“签名合同”。约定：接口共 22 个（BaseDao 1 个 + DAO 11 个 + util 回调 3 个 + Service 7 个），方法共 89 个（BaseDao 5 + DAO 53 + util 回调 3 + Service 28）。以下所有代码块均为接口声明的完整签名，为节省篇幅省略 import 语句；实际源文件中需导入 java.util.List、java.util.Optional、java.time.LocalDateTime、java.math.BigDecimal、java.nio.file.Path、java.io.IOException 以及 edu.campus.recycle 下的 entity / dto / exception 类型。方法名、参数类型与顺序、返回类型、throws 子句均逐字取自《_共享契约-实体与接口基线.md》第 5、6 节，不得改动。
+
+### [Heading 2] 5.1  接口设计约定
+（1）Optional 优先：查询单个对象一律返回 Optional<T>，禁止用 null 表示“不存在”；批量查询返回空 List 而非 null。
+（2）分页约定：分页查询的 pageNo 从 1 开始、pageSize 默认 10、上限 100；越界参数由 controller 先行纠正，Service 不再重复校验。
+（3）类型约定：金额 BigDecimal、时间 LocalDateTime、布尔字段 isXxx、枚举使用 enum；DAO 负责 REAL/TEXT 与 Java 类型互转。
+（4）异常约定：受检异常一个也不用：所有异常继承 AppException（RuntimeException），接口上的 throws 仅用于向调用方声明业务语义，编译器不强制捕获，但代码走查要求 controller 必须处理。
+（5）抽象约定：接口只声明“做什么”，不出现 SQL、Swing、Connection、ResultSet；实现细节全部留在 impl 包。
+
+### [Heading 2] 5.2  泛型基础接口 BaseDao
+代码 5-1  BaseDao 泛型基础接口（逐字取自契约第 5 节）
+public interface BaseDao<T, ID> {
+    Optional<T> findById(ID id);
+    List<T> findAll();
+    int insert(T entity);
+    int update(T entity);
+    int deleteById(ID id);
+}
+表 5-1  BaseDao 方法异常表
+BaseDao 的价值在于配合第 7 章模板方法：AbstractJdbcDao 为 5 个方法各提供一次 JDBC 骨架实现，子类只需实现 SQL 文本、参数绑定与行映射三个抽象方法，从而消除 11 个 DAO 中重复的 try-catch-finally。
+
+### [Heading 2] 5.3  DAO 接口清单（11 个）
+11 个 DAO 接口按“一张表一个接口”拆分，均位于 edu.campus.recycle.dao 包。其中“extends BaseDao<实体, Integer>”这一继承关系是本设计的补充（契约未逐条书写，但 BaseDao 的存在以被继承为前提），标记为【建议补充】；它不新增任何方法，只复用 5 个通用 CRUD 方法与模板方法的骨架。
+
+### [Heading 3] 5.3.1  UserDao
+代码 5-2  UserDao 接口（逐字取自契约第 5 节）
+public interface UserDao extends BaseDao<User, Integer> {
+    Optional<User> findByUsername(String username);
+    boolean existsByUsername(String u);
+    boolean existsByStudentNo(String no);
+    List<User> findByCondition(String keyword, String role, int pageNo, int pageSize);
+    int countByCondition(String keyword, String role);
+    int updateLoginSuccess(int userId, LocalDateTime loginTime);
+    int updateFailCount(int userId, int failCount, LocalDateTime lockedUntil);
+    int updateCreditScore(int userId, int newScore);
+    int updateStatus(int userId, String status);
+}
+表 5-2  UserDao 方法异常表
+
+### [Heading 3] 5.3.2  CategoryDao
+代码 5-3  CategoryDao 接口（逐字取自契约第 5 节）
+public interface CategoryDao extends BaseDao<Category, Integer> {
+    List<Category> findEnabled();
+    List<Category> findByParentId(Integer parentId);
+    boolean existsByName(Integer parentId, String name);
+    int updateEnabled(int id, boolean enabled);
+}
+表 5-3  CategoryDao 方法异常表
+
+### [Heading 3] 5.3.3  ItemDao
+代码 5-4  ItemDao 接口（逐字取自契约第 5 节）
+public interface ItemDao extends BaseDao<Item, Integer> {
+    int insert(Item item);                       // 回填自增主键
+    Optional<Item> findById(int id);
+    List<Item> search(ItemQuery q);
+    int countSearch(ItemQuery q);
+    int updateStatus(int itemId, String status, String remark);
+    int increaseViewCount(int itemId);
+    int increaseFavoriteCount(int itemId, int delta);
+    List<Item> findByOwnerId(int ownerId);
+    List<StatisticsDTO> countByCategory();
+}
+表 5-4  ItemDao 方法异常表
+
+### [Heading 3] 5.3.4  ItemImageDao
+代码 5-5  ItemImageDao 接口（逐字取自契约第 5 节）
+public interface ItemImageDao extends BaseDao<ItemImage, Integer> {
+    int batchInsert(List<ItemImage> images);
+    List<ItemImage> findByItemId(int itemId);
+    int deleteByItemId(int itemId);
+}
+表 5-5  ItemImageDao 方法异常表
+
+### [Heading 3] 5.3.5  FavoriteDao
+代码 5-6  FavoriteDao 接口（逐字取自契约第 5 节）
+public interface FavoriteDao extends BaseDao<Favorite, Integer> {
+    boolean exists(int userId, int itemId);
+    int insert(Favorite f);
+    int delete(int userId, int itemId);
+    List<Item> findItemsByUserId(int userId);
+    int countByItemId(int itemId);
+}
+表 5-6  FavoriteDao 方法异常表
+
+### [Heading 3] 5.3.6  TradeMessageDao
+代码 5-7  TradeMessageDao 接口（逐字取自契约第 5 节）
+public interface TradeMessageDao extends BaseDao<TradeMessage, Integer> {
+    int insert(TradeMessage m);
+    List<TradeMessage> findConversation(int userId, int otherUserId, int itemId);
+    int markRead(int toUserId, int itemId);
+    int countUnread(int userId);
+}
+表 5-7  TradeMessageDao 方法异常表
+
+### [Heading 3] 5.3.7  TradeFlowDao
+代码 5-8  TradeFlowDao 接口（逐字取自契约第 5 节）
+public interface TradeFlowDao extends BaseDao<TradeFlow, Integer> {
+    int insert(TradeFlow f);                     // 回填主键
+    Optional<TradeFlow> findActiveByItemId(int itemId);
+    Optional<TradeFlow> findById(int id);
+    int updateStatus(int flowId, String status, String cancelReason, LocalDateTime finishedAt);
+    List<TradeFlow> findByUserId(int userId, String status, int pageNo, int pageSize);
+    int countByUserId(int userId, String status);
+    List<StatisticsDTO> countByCategoryForPeriod(LocalDateTime from, LocalDateTime to);
+}
+表 5-8  TradeFlowDao 方法异常表
+
+### [Heading 3] 5.3.8  ReviewDao
+代码 5-9  ReviewDao 接口（逐字取自契约第 5 节）
+public interface ReviewDao extends BaseDao<Review, Integer> {
+    int insert(Review r);
+    boolean existsByFlowAndReviewer(int flowId, int reviewerId);
+    List<Review> findByRevieweeId(int revieweeId);
+    double avgScoreByRevieweeId(int revieweeId);
+}
+表 5-9  ReviewDao 方法异常表
+
+### [Heading 3] 5.3.9  CreditLogDao
+代码 5-10  CreditLogDao 接口（逐字取自契约第 5 节）
+public interface CreditLogDao extends BaseDao<CreditLog, Integer> {
+    int insert(CreditLog log);
+    List<CreditLog> findByUserId(int userId, int limit);
+}
+表 5-10  CreditLogDao 方法异常表
+
+### [Heading 3] 5.3.10  OperationLogDao
+代码 5-11  OperationLogDao 接口（逐字取自契约第 5 节）
+public interface OperationLogDao extends BaseDao<OperationLog, Integer> {
+    int insert(OperationLog log);
+    List<OperationLog> findRecent(int limit);
+}
+表 5-11  OperationLogDao 方法异常表
+
+### [Heading 3] 5.3.11  SystemConfigDao
+代码 5-12  SystemConfigDao 接口（逐字取自契约第 5 节）
+public interface SystemConfigDao extends BaseDao<SystemConfig, Integer> {
+    String getValue(String key);
+    int getInt(String key, int defaultValue);
+    double getDouble(String key, double defaultValue);
+    int upsert(String key, String value, String description);
+}
+表 5-12  SystemConfigDao 方法异常表
+
+### [Heading 2] 5.4  Service 接口清单（7 个）
+7 个 Service 接口位于 edu.campus.recycle.service 包，是 controller 唯一可见的业务类型，也是成员2 的全部实现任务边界。每个方法在表中的“可能抛出的异常”列同时给出了受检声明（写在签名 throws 中）与运行时异常（不写 throws，但业务实现必须按此契约抛出），两者均继承 AppException。
+
+### [Heading 3] 5.4.1  UserService
+代码 5-13  UserService 接口（逐字取自契约第 6 节）
+public interface UserService {
+    User register(String username, String rawPassword, String realName, String studentNo, String role, String college, String contact) throws ValidationException, DuplicateEntityException;
+    LoginResult login(String username, String rawPassword) throws AuthenticationException, AccountLockedException;
+    void changePassword(int userId, String oldPwd, String newPwd) throws AuthenticationException, ValidationException;
+    User findById(int userId) throws EntityNotFoundException;
+    List<User> queryUsers(String keyword, String role, int pageNo, int pageSize);
+    void freezeUser(int operatorId, int userId) throws PermissionDeniedException, BusinessRuleException;
+    void unfreezeUser(int operatorId, int userId) throws PermissionDeniedException;
+    void updateCredit(int userId, int delta, Integer flowId, String reason) throws BusinessRuleException;
+}
+表 5-13  UserService 方法异常表
+
+### [Heading 3] 5.4.2  ItemService
+代码 5-14  ItemService 接口（逐字取自契约第 6 节）
+public interface ItemService {
+    Item publish(Item item, List<String> imagePaths) throws ValidationException, BusinessRuleException;
+    void updateItem(Item item, int operatorId) throws PermissionDeniedException, EntityNotFoundException;
+    void offShelf(int itemId, int operatorId) throws PermissionDeniedException;
+    PageResult<Item> search(ItemQuery query);
+    Item detail(int itemId) throws EntityNotFoundException;
+    void audit(int operatorId, int itemId, boolean pass, String remark) throws PermissionDeniedException;
+}
+表 5-14  ItemService 方法异常表
+
+### [Heading 3] 5.4.3  FavoriteService
+代码 5-15  FavoriteService 接口（逐字取自契约第 6 节）
+public interface FavoriteService {
+    boolean toggle(int userId, int itemId);
+    List<Item> listByUser(int userId);
+}
+表 5-15  FavoriteService 方法异常表
+
+### [Heading 3] 5.4.4  TradeService
+代码 5-16  TradeService 接口（逐字取自契约第 6 节）
+public interface TradeService {
+    TradeFlow apply(int itemId, int buyerId, String remark) throws BusinessRuleException, EntityNotFoundException;
+    void agree(int flowId, int operatorId) throws PermissionDeniedException, BusinessRuleException;
+    void confirm(int flowId, int operatorId) throws PermissionDeniedException, BusinessRuleException;   // 跨表事务
+    void cancel(int flowId, int operatorId, String reason) throws PermissionDeniedException;
+    List<TradeFlow> history(int userId, String status, int pageNo, int pageSize);
+}
+表 5-16  TradeService 方法异常表
+
+### [Heading 3] 5.4.5  ReviewService
+代码 5-17  ReviewService 接口（逐字取自契约第 6 节）
+public interface ReviewService {
+    Review review(int flowId, int reviewerId, int score, String content) throws BusinessRuleException, DuplicateEntityException;
+}
+表 5-17  ReviewService 方法异常表
+
+### [Heading 3] 5.4.6  StatisticService
+代码 5-18  StatisticService 接口（逐字取自契约第 6 节）
+public interface StatisticService {
+    List<StatisticsDTO> statisticsByCategory(LocalDateTime from, LocalDateTime to);
+    double carbonReduction(LocalDateTime from, LocalDateTime to);
+    String exportCsv(Path target, LocalDateTime from, LocalDateTime to) throws IOException;
+}
+表 5-18  StatisticService 方法异常表
+
+### [Heading 3] 5.4.7  AdminService
+代码 5-19  AdminService 接口（逐字取自契约第 6 节）
+public interface AdminService {
+    void addCategory(int operatorId, String name, Integer parentId) throws DuplicateEntityException;
+    void toggleCategory(int operatorId, int categoryId, boolean enabled);
+    List<OperationLog> recentLogs(int limit);
+}
+表 5-19  AdminService 方法异常表
+
+### [Heading 2] 5.5  接口一致性自检
+接口清单的自检结果如下（由 D2 生成脚本中的断言自动校验，表 5-20 记录）：
+表 5-20  接口与签名一致性自检
+
+### [Heading 2] 5.6  【建议补充】扩展接口草案
+契约第 8 节列出了设计模式的落点类名，但未给出接口签名。为使成员2、成员3 有统一实现目标，本节补充三组接口草案（均标记【建议补充】，实现细节可在迭代二评审时微调，但类名与方法语义以此为基线）。
+表 5-21  【建议补充】设计模式相关接口草案
+
+### [Heading 2] 5.7  util 回调接口（RowMapper / ConnectionCallback / TransactionCallback）
+5.1 节约定“接口只声明做什么，不出现 SQL、Swing、Connection、ResultSet”，但 DAO 实现与事务模板方法必须接触 JDBC 对象。为把“必须接触 JDBC、又必须由模板方法统一管理”的代码抽离，util 包定义 3 个 @FunctionalInterface 回调接口：调用方只提供“一行或一段 JDBC 逻辑”，连接的获取、事务的提交/回滚与资源释放由 AbstractJdbcDao / DbUtil 统一完成（模板方法模式，见 7.5 节）。这三个接口是 D3 类图页 2 中 AbstractJdbcDao 模板方法与 DbUtil 事务方法的可替换部分，也是成员1 实现 DAO 实现类时的统一入口。
+代码 5-20  RowMapper 行映射回调（签名取自 code 的 util 包）
+@FunctionalInterface
+public interface RowMapper<T> {
+    T mapRow(ResultSet rs) throws SQLException;
+}
+代码 5-21  ConnectionCallback 连接回调（签名取自 code 的 util 包）
+@FunctionalInterface
+public interface ConnectionCallback<R> {
+    R doInConnection(Connection conn) throws SQLException;
+}
+代码 5-22  TransactionCallback 事务回调（签名取自 code 的 util 包）
+@FunctionalInterface
+public interface TransactionCallback<T> {
+    T doInTransaction(Connection conn) throws Exception;
+}
+表 5-22  util 回调接口方法、异常与归属
+口径说明：第 2 轮交叉校验给出的草案为 RowMapper.map(ResultSet)、ConnectionCallback.doInConnection(...) throws SQLException, AppException、TransactionCallback.doInTransaction(...) throws SQLException, AppException。经逐字核对 code 的 edu.campus.recycle.util 源文件，以 code 为准：方法名分别为 mapRow、doInConnection、doInTransaction；RowMapper 与 ConnectionCallback 只声明 throws SQLException，TransactionCallback 声明 throws Exception（任意异常均回滚）。本节按 code 实际签名录入，未改动《_共享契约》正文；若后续契约补充这 3 个接口，须同步本节与表 5-20。
+
+### [Heading 1] 6  异常体系
+
+### [Heading 2] 6.1  设计目标
+异常体系承担三项职责：其一，把“业务失败”与“程序缺陷”区分开——前者用 AppException 子类表达并可被界面友好提示，后者交由日志与未捕获异常处理器暴露；其二，用稳定的 code 把异常与提示文案解耦，界面不硬编码中文文案；其三，保证任何异常都不会导致数据库连接泄漏或事务悬挂。
+全部继承 RuntimeException：Service 接口签名上的 throws 只作语义声明，避免方法链上层层声明受检异常。
+携带 code 与 userMessage：code 供日志检索与断言（如 AUTH-001），userMessage 供界面直接展示。
+保留 cause：包装底层 SQLException/IOException 时不丢失原始堆栈。
+统一工厂方法：AppException.of(code, userMessage, cause)，禁止直接 new 子类时漏设 code。
+
+### [Heading 2] 6.2  异常树
+异常体系的树形结构逐字取自契约第 7 节，共 1 个基类与 9 个子类。
+代码 6-1  异常体系树（逐字取自契约第 7 节）
+AppException (extends RuntimeException)  ── 字段：String code; String userMessage
+├─ ValidationException        code=VAL-xxx
+├─ DuplicateEntityException   code=DUP-xxx
+├─ EntityNotFoundException    code=NF-xxx
+├─ AuthenticationException    code=AUTH-xxx
+├─ AccountLockedException     code=LOCK-xxx
+├─ PermissionDeniedException  code=PERM-xxx
+├─ BusinessRuleException      code=BR-xxx（携带违反的 BR 编号）
+├─ DataAccessException        code=DB-xxx
+└─ TransactionException       code=TX-xxx
+表 6-1  异常类与职责
+
+### [Heading 2] 6.3  触发场景与 UI 提示映射
+界面不直接拼接错误文案，而是通过 code → 文案表的映射获取提示；表 6-2 给出每类异常在迭代一中已确定的典型场景与提示文案，文案统一维护在 ui 包的 ErrorMessageMapper 中（一个 code 一个键），新增 code 必须同步登记本表。
+表 6-2  异常触发场景与 UI 提示映射
+
+### [Heading 2] 6.4  全局异常处理策略
+本系统不引入框架的全局异常处理器，而是用“分层捕获 + 统一翻译 + 兜底处理器”三层策略实现同等效果。核心原则只有一条：UI 层只捕获 AppException，绝不在界面里写 e.printStackTrace() 或吞掉异常。
+表 6-3  全局异常处理的分层责任
+代码 6-2  UI 层统一异常处理与后台任务骨架（成员3 直接复用）
+// ui 层统一处理模板（所有事件监听器复用，禁止各自 try-catch 十行）
+public void onAction(ActionEvent e) {
+    try {
+        new SwingWorker<PageResult<Item>, Void>() {
+            protected PageResult<Item> doInBackground() { return itemService.search(query); }
+            protected void done() {
+                try { tableModel.setRows(get().records()); }
+                catch (ExecutionException ex) { showError((AppException) ex.getCause()); }
+                catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
+            }
+        }.execute();
+    } catch (AppException ex) { ErrorMessageMapper.show(this, ex); }
+}
+关于 operation_log 与日志文件的分工：业务异常（VAL/DUP/PERM/BR 等）由 controller 记录“谁在什么操作上失败”，用于管理员审计；系统异常（DB/TX 与未捕获异常）写入 logs/app.log（java.util.logging，按天滚动），供开发定位。两者都不记录明文密码、盐与完整 SQL 参数（BR-02）。
+
+### [Heading 2] 6.5  异常编号规范
+code 采用“前缀-三位数字”格式，前缀表示异常类别，数字段按模块分段：001–099 用户与通用、101–199 物品与检索、201–299 流转、301–399 评价、051–099 管理员（与 001–099 段内再细分）、901–999 系统级。新增 code 必须满足：唯一、含义稳定、在表 6-2 或 ErrorMessageMapper 中登记。示例：AUTH-001 登录失败、LOCK-001 账号锁定、BR-04 信用分不足、TX-001 成交事务回滚、DB-171 流转唯一索引冲突。
+
+### [Heading 1] 7  设计模式落点
+课程要求恰当使用至少 3 种设计模式；本设计在契约第 8 节确认了 5 处必选落点与 1 个备选。本节对每个模式按“问题—方案—代码骨架—涉及类—可扩展点”五段式说明，确保每个模式都能回答“用在哪、解决什么问题、不加会怎样”三个答辩问题。模式汇总见表 7-1。
+
+### [Heading 2] 7.1  单例（Singleton）
+问题：SQLite 桌面应用若每次操作都 DriverManager.getConnection，会反复打开数据库文件；system_config 表若每个界面各自读取，会重复解析且配置不一致；Maven 单进程桌面程序中这些资源天然全局唯一。
+方案：DbUtil 与 ConfigManager 使用“静态内部类持有实例”的懒加载单例（线程安全且无同步开销）；构造函数私有化，唯一入口为 getInstance()；DbUtil 内部维护连接模板与事务方法，ConfigManager 首次访问时加载 system_config 并缓存。
+代码 7-1  单例骨架（DbUtil；ConfigManager 同构）
+public final class DbUtil {
+    private DbUtil() { }
+    private static class Holder { private static final DbUtil INSTANCE = new DbUtil(); }
+    public static DbUtil getInstance() { return Holder.INSTANCE; }
+    public Connection getConnection() throws DataAccessException { /* DriverManager + DbConfig */ }
+    public void beginTransaction(Connection c) { /* setAutoCommit(false) */ }
+    public void commit(Connection c) { /* commit + 归还 */ }
+    public void rollback(Connection c) { /* rollback + 归还 */ }
+}
+涉及类：DbUtil、ConfigManager（util/config 包）、AbstractJdbcDao（调用 DbUtil 取连接）。可扩展点：若后续引入连接池（如 HikariCP，需评估课程“禁止重量级框架”约束），只改 DbUtil 内部实现，调用方与 DAO 均无感知；配置热更新只需在 ConfigManager 增加 reload()。
+
+### [Heading 2] 7.2  工厂（Factory）
+问题：上层若直接 new UserDaoImpl()、new TradeServiceImpl()，则在单元测试中无法替换为桩实现，且 DAO 实现类名变化会波及所有调用方——这正是依赖倒置原则要解决的问题。
+方案：DaoFactory 与 ServiceFactory 按需返回接口实例：DAO 由枚举/Class 描述符决定（便于替换为内存实现），Service 由无参工厂方法返回单例实现（ServiceImpl 内部通过 DaoFactory 获取 DAO）；调用方只声明接口类型。
+代码 7-2  工厂骨架（DaoFactory / ServiceFactory）
+public final class DaoFactory {
+    private DaoFactory() { }
+    public static UserDao userDao()   { return new UserDaoImpl(DbUtil.getInstance()); }
+    public static ItemDao itemDao()   { return new ItemDaoImpl(DbUtil.getInstance()); }
+    public static TradeFlowDao tradeFlowDao() { return new TradeFlowDaoImpl(DbUtil.getInstance()); }
+    /* … 11 个 DAO 各一个静态工厂方法 */
+}
+// 测试中可注入桩：DaoFactory.setUserDao(new FakeUserDao());
+public final class ServiceFactory {
+    private ServiceFactory() { }
+    public static UserService userService() { return UserServiceImpl.INSTANCE; }
+}
+涉及类：DaoFactory、ServiceFactory、11 个 DaoImpl、7 个 ServiceImpl。可扩展点：新增 DAO 只需在工厂加一行并实现接口；替换某个 DAO 为“带缓存的实现”不影响 Service；测试通过 setXxx 注入桩对象实现零数据库单元测试。
+
+### [Heading 2] 7.3  策略（Strategy）
+问题：物品检索支持“最新发布/价格升序/价格降序/信用优先”四种排序，若在 ItemServiceImpl 内写 if-else 拼 ORDER BY，新增排序方式就要修改 Service 并重跑全部测试；低碳减排系数按分类不同，硬编码在计算公式中同样难以扩展。
+方案：定义 ItemSortStrategy 接口封装“排序片段生成”算法，ItemServiceImpl.search 根据 ItemQuery.sortBy 从策略表选择；定义 CarbonFactorStrategy 接口封装“分类→减排系数”映射，StatisticServiceImpl 只调用接口，系数值来自 system_config。
+代码 7-3  策略骨架（ItemSortStrategy；CarbonFactorStrategy 同构）
+public interface ItemSortStrategy {
+    String name();                       // LATEST / PRICE_ASC / PRICE_DESC / CREDIT_FIRST
+    String buildOrderBy(ItemQuery q);    // 返回安全的 ORDER BY 片段，禁止拼接用户输入
+}
+public class PriceAscSortStrategy implements ItemSortStrategy {
+    public String name() { return "PRICE_ASC"; }
+    public String buildOrderBy(ItemQuery q) { return " ORDER BY i.price ASC, i.id DESC"; }
+}
+// ItemServiceImpl.search：ItemSortStrategy s = sortStrategies.getOrDefault(q.getSortBy(), latest);
+涉及类：ItemSortStrategy 及 4 个实现、CarbonFactorStrategy 及实现、ItemServiceImpl、StatisticServiceImpl。可扩展点：新增“距离优先/成色优先”只需新增实现类并注册；策略实现可独立做单元测试（断言返回的 ORDER BY 片段），不必构造数据库。
+
+### [Heading 2] 7.4  观察者（Observer）
+问题：流转成交完成后需要做四件事：改物品状态、给双方加信用分并写流水、写操作日志、更新统计缓存。若全部写在 TradeServiceImpl.confirm 中，方法会膨胀且每加一个副作用都要改成交逻辑，违反开闭原则。
+方案：定义 ItemEventBus（发布/订阅）与监听器统一接口；TradeServiceImpl 在事务提交成功后发布 ItemEvent，CreditChangeListener、OperationLogListener、StatisticListener 各自订阅处理。事件携带 itemId、flowId、operatorId，不携带 Connection——需要事务一致性的写操作仍留在交易方法内部，事件只承担“事务后可容忍重试”的副作用。
+代码 7-4  观察者骨架（ItemEventBus + 监听器）
+public interface ItemEventListener { void onEvent(ItemEvent e); }
+public class SimpleItemEventBus {
+    private final Map<ItemEventType, List<ItemEventListener>> listeners = new EnumMap<>(ItemEventType.class);
+    public void subscribe(ItemEventType t, ItemEventListener l) { listeners.computeIfAbsent(t, k -> new ArrayList<>()).add(l); }
+    public void publish(ItemEvent e) { listeners.getOrDefault(e.getType(), List.of()).forEach(l -> l.onEvent(e)); }
+}
+// TradeServiceImpl.confirm 末尾：eventBus.publish(new ItemEvent(FLOW_DONE, itemId, flowId, operatorId));
+涉及类：ItemEventBus、ItemEvent、ItemEventListener、CreditChangeListener、OperationLogListener、StatisticListener、TradeServiceImpl、ReviewServiceImpl。可扩展点：新增“邮件通知/桌面提醒”只需新增监听器并订阅，成交方法不改；测试可注册计数监听器断言事件被发布一次。
+
+### [Heading 2] 7.5  模板方法（Template Method）
+问题：JDBC 代码天然重复——拿连接、创建 PreparedStatement、绑定参数、执行、处理 ResultSet、在 finally 中关闭资源、把 SQLException 转成 DataAccessException。11 个 DAO 若各写一遍，既是代码坏味道（重复代码），也容易漏关资源导致连接泄漏。
+方案：抽象类 AbstractJdbcDao 定义查询/更新的执行骨架（final 方法），把“SQL 文本、参数绑定、行映射”留给子类实现（抽象方法）；AbstractCsvExporter 以 final export 固定“写表头—写数据行—落盘—异常转换”流程，子类只提供数据行。两个模板方法分别消除数据访问层与导出层的重复。
+代码 7-5  模板方法骨架（AbstractJdbcDao；AbstractCsvExporter 同构）
+public abstract class AbstractJdbcDao<T, ID> implements BaseDao<T, ID> {
+    protected final <R> R query(String sql, StatementBinder binder, RowMapper<R> mapper) {
+        try (Connection c = DbUtil.getInstance().getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            binder.bind(ps);
+            try (ResultSet rs = ps.executeQuery()) { return mapper.map(rs); }
+        } catch (SQLException e) {
+            throw AppException.of("DB-101", "数据查询失败", e);   // 模板统一转换异常
+        }
+    }
+}
+// 子类只写：sqlFindById() + bind + mapRow，不再出现 try-with-resources
+涉及类：AbstractJdbcDao（11 个 DAO 实现继承）、AbstractCsvExporter（StatisticCsvExporter 继承）、DbUtil。可扩展点：新增 DAO 自动获得资源释放与异常转换；若要统一加 SQL 耗时日志，只改模板方法一处；模板方法使 DAO 实现类只剩 3 个短方法，便于代码走查。
+
+### [Heading 2] 7.6  建造者（Builder）——备选模式【建议补充】
+问题：物品检索条件有 keyword、categoryId、minPrice、maxPrice、tradeType、status、ownerId、sortBy、pageNo、pageSize 共 10 个，其中 8 个可选。若用构造器传参，将出现“10 个参数、一半是 null”的超长参数表，调用处极易把参数位置写错。
+方案：ItemQueryBuilder 提供链式设置方法，每个方法返回 this，build() 时统一处理默认值（pageNo=1、pageSize=10）与合法性预检（minPrice ≤ maxPrice）；ItemQuery 本身保持不可变或包内可写。该模式是备选，若迭代二时间紧张可不实现，但检索界面涉及 8 个可选条件，建议实现以降低出错概率。
+代码 7-6  建造者骨架（ItemQueryBuilder）【建议补充】
+public class ItemQueryBuilder {
+    private final ItemQuery q = new ItemQuery();
+    public ItemQueryBuilder keyword(String k) { q.setKeyword(k); return this; }
+    public ItemQueryBuilder categoryId(Integer id) { q.setCategoryId(id); return this; }
+    public ItemQueryBuilder priceRange(BigDecimal min, BigDecimal max) { q.setMinPrice(min); q.setMaxPrice(max); return this; }
+    public ItemQueryBuilder page(int pageNo, int pageSize) { q.setPageNo(pageNo); q.setPageSize(pageSize); return this; }
+    public ItemQuery build() { /* 默认值 + min<=max 预检，非法抛 ValidationException */ return q; }
+}
+涉及类：ItemQueryBuilder、ItemQuery、检索界面（SearchFrame）。可扩展点：新增检索维度时只需加一个链式方法，不影响既有调用；同一 Builder 可复用于“我的物品”“管理员物品列表”等不同查询场景。
+
+### [Heading 2] 7.7  模式汇总与课程考核对应
+表 7-1  设计模式落点汇总
+五个必选模式分别落在“基础设施（单例/模板方法）、对象创建（工厂）、算法替换（策略）、事件解耦（观察者）”四类经典场景，覆盖了课程第九章对“库、框架、设计模式、组件复用”的考核点；模式实现类与第 3 章包结构、第 5 章接口清单一一对应，D3 类图中以带虚线的依赖/实现关系呈现。
+
+### [Heading 1] 8  成员2（业务逻辑与测试）开工契约
+本章把第 5、6、7 章的接口与规则落到成员2 的具体任务上：实现哪些类、每个方法遵守什么业务规则、事务边界在哪里、JUnit 要覆盖哪些测试点。成员2 按本章开工，无需等待成员3 的界面代码，也无需等待成员1 的 DAO 实现全部完成——只要 DAO 接口已按第 5 章冻结，即可用桩实现先行开发。
+
+### [Heading 2] 8.1  开工前置条件与边界
+（1）输入：以《_共享契约-实体与接口基线.md》第 4/5/6/7/9 节与本文第 5、6 章为准；接口方法签名只读，不得增删改。
+（2）写域：edu.campus.recycle.service.impl 包下 7 个实现类，以及 src/test/java 下对应测试类；不修改 dao/entity/dto 包（如需新增字段报 Lead）。
+（3）硬性约束：business 规则全部在 Service 实现内判定；SQL 一律通过 DAO 接口；事务只用 DbUtil，不出现 DriverManager。
+（4）交付判据：每个实现类必须能在无 GUI、无真实数据库（桩 DAO）环境下通过单元测试；涉及事务与 SQL 的方法用集成测试补齐。
+
+### [Heading 2] 8.2  待实现的 Service 实现类
+表 8-1  Service 实现类清单与事务要求
+
+### [Heading 2] 8.3  逐方法业务规则与事务要求
+表 8-2 是成员2 的逐方法施工单：每行的“业务规则”列给出必须实现的判定，事务列标明是否使用 DbUtil 显式事务，异常列给出失败时的抛出类型（与第 5 章异常表一致）。
+表 8-2  逐方法业务规则与事务要求（28 个方法）
+事务实现的统一骨架由 AbstractJdbcDao.executeInTransaction 提供（第 7.5 节），Service 层调用形式为：DbUtil.beginTransaction 后依次调用 DAO 方法，全部成功则 commit，捕获任意 AppException 则 rollback 并继续上抛；禁止在事务中途 return 而不提交，也禁止把 rollback 写在 catch 之外的分支。
+
+### [Heading 2] 8.4  JUnit 5 测试点清单
+测试分为单元测试（桩 DAO，不连库）与集成测试（内存 SQLite，执行真实 SQL）。表 8-3 给出迭代二开工即应编写的28 条用例名与断言要点，覆盖 BR-01～BR-12 中可由业务层验证的部分；后续迭代可继续追加，但不得删减既有用例。
+表 8-3  JUnit 5 测试点清单（28 条）
+测试编写约定：类名 XxxServiceTest；方法名采用“方法_场景_期望”三段式；每条用例至少一个断言；涉及事务的用例必须断言回滚后的数据库状态（TC-12、TC-20），不能只断言异常类型；测试数据用 @BeforeEach 构造，禁止用例之间共享可变状态；内存 SQLite 集成测试统一使用 jdbc:sqlite::memory: 并在 @BeforeEach 执行 schema.sql。
+
+### [Heading 2] 8.5  编码与提交约定
+每个 public 方法必须有 Javadoc，写明 @throws 的业务含义与对应 BR 编号。
+异常只抛不吞；catch 块只允许两种形态：rollback 后重新抛出，或包装为更具体的 AppException 并保留 cause。
+日志使用 java.util.logging，禁止在 Service 中打印明文密码、盐与完整 SQL 参数（BR-02）。
+提交粒度以“一个方法 + 对应测试”为单位，提交信息格式 `feat(service): 实现 UserService.login（BR-03）`；每日至少一次可编译提交。
+不得为了让测试通过而放宽 BR 规则；若认为契约规则有误，先报 Lead，不得自行修改本文第 5、6 章。
+
+### [Heading 1] 9  成员3（GUI/复用/交付）开工契约
+成员3 负责 Swing 界面、事件驱动交互、设计模式在 UI 侧的应用、Maven 构建与打包交付。界面只依赖 controller 与 Service 接口（经 ServiceFactory 获取），不得出现 SQL、不得直接操作 DAO，这一约束使界面可以在业务实现尚未完成时先用假数据联调布局。
+
+### [Heading 2] 9.1  GUI 总体结构
+主界面采用“菜单栏 + 左侧功能导航 + 右侧卡片区（CardLayout）”结构：登录成功后按角色动态显示菜单项（普通用户隐藏管理员菜单，BR-10 的第一道界面防线）；所有列表使用 JTable + 自定义 TableModel；表单使用 GridBagLayout；危险操作（下架、冻结、取消流转）二次确认；耗时操作一律 SwingWorker。
+
+### [Heading 2] 9.2  窗体清单与 Service 依赖
+表 9-1  Swing 窗体清单与依赖的 Service 方法
+
+### [Heading 2] 9.3  事件驱动约定
+Swing 是单线程模型，界面卡死与线程安全问题大多来自“在 EDT 中做数据库查询”。本节给出强制约定，成员3 的所有事件监听器必须遵守，代码走查时逐条核对。
+（1）后台执行：所有 Service 调用放到 SwingWorker.doInBackground()；done() 中再更新控件与表格模型。
+（2）EDT 规则：禁止在 doInBackground() 中操作任何 Swing 组件；禁止在 EDT 中 DriverManager、文件 IO、sleep。
+（3）防重复提交：按钮点击后立即 setEnabled(false)，done()/异常分支 finally 中恢复，防止重复提交（成交、评价等幂等敏感操作必须做）。
+（4）统一异常：catch 统一捕获 AppException，经 ErrorMessageMapper 按 code 映射文案；捕获到其他异常说明分层被绕过，须修正。
+（5）表格模型：TableModel 继承 AbstractTableModel，提供 setRows(List<T>) 与 getRow(int) 方法；禁止用 DefaultTableModel 直接塞 Object[]（丢失类型）。
+（6）空态与失败态：列表为空时显示“暂无数据”占位标签；加载中显示进度条或禁用按钮；错误后保留用户已填内容，不清空表单。
+（7）二次确认与刷新：确认成交/下架/冻结前 JOptionPane 二次确认；成功操作后刷新受影响列表（成交后同时刷新物品与流转两个视图）。
+代码 9-1  事件驱动的标准写法（SwingWorker + 统一异常 + 防重复提交）
+// 成员3 统一事件处理模式（所有按钮监听器照此实现）
+btnConfirm.addActionListener(e -> {
+    int flowId = tableModel.getRow(table.getSelectedRow()).getId();
+    btnConfirm.setEnabled(false);
+    new SwingWorker<Void, Void>() {
+        protected Void doInBackground() { tradeController.confirm(flowId, currentUserId); return null; }
+        protected void done() {
+            try { get(); refreshTradeTable(); refreshItemTable(); }
+            catch (ExecutionException ex) { ErrorMessageMapper.show(MainFrame.this, (AppException) ex.getCause()); }
+            catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
+            finally { btnConfirm.setEnabled(true); }
+        }
+    }.execute();
+});
+
+### [Heading 2] 9.4  设计模式在 UI 侧的复用
+单例：所有窗体通过 ConfigManager.getInstance() 读取分页大小、图片目录等只读配置，不各自读文件。
+工厂：窗体的 Service 依赖由 ServiceFactory 提供（或由 MainFrame 统一注入），便于替换为假实现做界面联调。
+策略：排序下拉框的选项与 ItemSortStrategy.name() 一一对应，新增排序策略只需在界面下拉加一项，不修改检索逻辑。
+观察者：流转列表与统计页注册为 ItemEventBus 的监听者，成交成功后自动刷新，无需按钮之间互相调用。
+
+### [Heading 2] 9.5  Maven 构建与打包要求
+工程为单模块 Maven 项目，坐标 groupId=edu.campus、artifactId=green-campus、version=1.0.0，maven.compiler.release=17。打包目标为“双击即可运行”的 fat jar，数据库初始化脚本随 jar 一起分发。
+表 9-2  Maven 打包与交付要求
+环境事实说明：本机未安装 Maven、未安装 drawio CLI、未安装 sqlite3 CLI。因此迭代一的构建与图形验证以“pom 静态核对 + javac --release 17 单文件编译 + Python sqlite3 实跑 schema.sql + drawio XML 解析”作为替代验证手段，任何交付物中不得出现伪造的 mvn package 成功输出或 drawio 截图。
+
+### [Heading 2] 9.6  成员3 交付验收清单
+9 个窗体全部可打开、无未捕获异常；普通用户看不到管理员菜单；每个窗体与表 9-1 的 Service 方法一一对应。
+所有耗时操作有 SwingWorker；成交、下架、冻结均有二次确认；异常提示文案来自 ErrorMessageMapper。
+pom.xml 中依赖与插件配置完整；jar 可执行；README 部署说明含运行命令与常见问题。
+界面文案与术语符合契约第 2 节用词（物品/流转/沟通消息/信用分/分类/管理员），不得出现“订单”“商品”等禁用词。
+
+### [Heading 1] 10  与 D3/D4/D5 的对应关系
+本规范是设计文档族的“枢纽”：D3 类图把第 3、5、6、7 章的类与接口画成图，D4 时序图把第 2、4 章的规则与第 5 章的方法签名串成调用链，D5 表设计把第 4 章的实体字段落成 DDL。三者的任何改动都必须回写本节对应关系，并在文末一致性检查中留痕。
+
+### [Heading 2] 10.1  与 D3 UML 类图的对应
+表 10-1  D2 内容到 D3 类图的映射
+
+### [Heading 2] 10.2  与 D4 UML 时序图的对应
+表 10-2  D2 规则到 D4 时序图场景的映射
+
+### [Heading 2] 10.3  与 D5 数据库表设计的对应
+表 10-3  实体/DAO/表/本文章节的对应
+字段级一致性要求：实体字段 = 表字段转驼峰（trade_type→tradeType），不得增删字段；金额 BigDecimal ↔ REAL；时间 LocalDateTime ↔ TEXT（yyyy-MM-dd HH:mm:ss）；布尔 boolean ↔ INTEGER(0/1)；枚举 enum ↔ TEXT(name()) 并用 CHECK 限制取值。D5 建表顺序按外键依赖：user → category → item → item_image → favorite → trade_message → trade_flow → review → credit_log → operation_log → system_config。
+
+### [Heading 2] 10.4  一致性维护流程
+契约是唯一事实来源，本文、D3、D4、D5、D7 都是它的派生视图。变更必须按以下流程进行，任何“先改代码再补文档”的做法都会导致接口漂移，最终在集成阶段集中爆发。
+（1）提出：发现契约缺字段/签名不合理时，send_message 报 Lead，说明影响面（涉及哪几个接口、哪张表、哪张图）。
+（2）裁定：Lead 修订《_共享契约》并广播版本号；成员不得自行修改契约文件。
+（3）同步：D2（本文）、D3 类图、D4 时序图、D5 表设计、D7 代码在同一迭代内同步修订，并在表 0-1 追加修订记录。
+（4）校验：用脚本做三类自检：drawio XML 可解析且 mxCell 数量达标；docx 可被 python-docx 重新打开且章节齐全；schema.sql 可被 Python sqlite3 实跑。
+（5）门禁：接口签名、表字段、异常 code 三处只要有一处不一致，即判定交付不合格，由 Lead 统一修订后再提交。
+【生成：deepseek-flash / arch-modeler / 第 1 轮】
+
+
+===== TABLES =====
+
+[表 1]
+课程名称 | 软件构造（3 人分组实验 · 8 周 4 迭代）
+项目题目 | 低碳校园资源循环流转桌面系统（GreenCampus Recycle）
+当前迭代 | 迭代一（第 1–2 周：需求与设计）
+交付人 | 成员1（系统设计与数据层负责人）
+文档编号 | D2 / 基线版本 V1.0
+技术栈 | Java 17 + Maven + SQLite(xerial sqlite-jdbc) + JDBC + Swing + JUnit 5
+基线依据 | _共享契约-实体与接口基线.md（唯一字段与签名来源）
+完成日期 | 2026 年 11 月
+
+[表 2]
+版本 | 日期 | 修订人 | 修订说明 | 关联契约版本
+V0.1 | 2026-11-02 | 成员1 | 初稿：分层架构、包结构、模块划分 | 契约 V1.0（第 1/2/4/5/6/7/8/9 节）
+V1.0 | 2026-11-02 | 成员1 | 补全 DAO/Service 全部签名与异常列、设计模式落点、成员2/3 开工契约、D3/D4/D5 映射 | 契约 V1.0
+
+[表 3]
+原则 | 含义 | 在本系统中的落点 | 违反后的后果（走查判据）
+关注点分离 (Separation of Concerns) | 界面、流程控制、业务规则、数据访问各自独立演化，变更不互相传染。 | 11 个包按层划分；ui 只管控件与事件，controller 只管参数与结果封装，service 只管业务与事务，dao 只管 SQL 与结果映射。 | 若某个 Frame 里出现 SQL 字符串或 PreparedStatement，即判定违反；后续换库时将同时修改界面与数据层。
+接口隔离 (Interface Segregation) | 每个接口只暴露调用方真正需要的方法，不强迫实现类实现无关方法。 | 用户/物品/检索收藏/流转/评价/统计/管理员拆为 7 个 Service 接口；DAO 按表拆为 11 个接口 + BaseDao 泛型基础接口。 | 若出现“大而全的 SystemService”，成员2 的三个业务模块无法并行开发，JUnit 桩实现需实现大量无关方法。
+依赖倒置 (Dependency Inversion) | 高层模块与低层模块都依赖抽象；抽象不依赖细节。 | controller 依赖 service 接口，service.impl 依赖 dao 接口；实现类由 DaoFactory / ServiceFactory 按需返回，调用方不出现 new XxxImpl()。 | 若 ui 直接 new UserDaoImpl()，则隔离单元测试无法注入桩对象，且违反第 2 章依赖规则 R3。
+防御性编程 (Defensive Programming) | 对一切外部输入（键盘输入、文件、数据库返回值）做校验与失败处理，不假定调用者守规矩。 | Validator + 两层校验；Optional 表达“可能不存在”；所有业务失败抛出 AppException 子类；数据库连接与事务由模板方法统一释放。 | 若使用返回 null 表示“查不到”或直接信任界面传入的分数，会产生 NPE 与越界信用分（违反 BR-04）。
+单一职责 (Single Responsibility) | 一个类只有一个引起它变化的原因。 | 实体类只承载数据；Strategy 只承载算法；Listener 只承载“一个副作用”；Controller 只做一次请求的适配。 | 若 ServiceImpl 同时拼 SQL、算减排、弹对话框，则任一需求变化都需改动该类，模块化评分项失分。
+
+[表 4]
+对照维度 | 简单 CRUD（界面直连 SQL） | 本系统分层架构 | 收益说明
+事务控制 | 每条 SQL 独立自动提交，跨表操作无法回滚 | service.impl 为唯一事务边界，DbUtil 提供 begin/commit/rollback，AbstractJdbcDao 模板方法统一收口 | 满足 BR-07，保证“成交+信用+日志”原子性
+可测试性 | 必须启动真实数据库并模拟点击才能测业务 | Service 依赖 DAO 接口，可用桩实现做纯内存单元测试 | 成员2 可在无 GUI 环境下完成 20 条 JUnit 用例
+权限与规则 | 规则散落在各按钮监听器中，重复且易漏 | 规则集中在 7 个 Service 实现类，抛出 BR-xx 业务异常 | 同一规则只实现一次，界面只负责展示错误
+可替换性 | 换库/换实现需重写界面 | DAO 接口 + DaoFactory，新增实现只需改工厂 | 体现依赖倒置与工厂模式
+并行分工 | 类边界模糊，3 人难以同时改同一批类 | 按包与模块切分写域（第 4 章表 4-1） | 成员2/3 可依据第 8、9 章立即开工
+课程评分 | 模块化、设计模式、UML 等评分项缺支撑 | 层、包、接口、模式、UML 一一对应 | 对齐评分依据中“设计质量 35%”
+
+[表 5]
+层次 | 包 | 核心职责 | 允许依赖 | 禁止事项
+表现层 | ui | Swing 窗体/面板/表格模型；采集用户输入；把 controller 返回的结果渲染为界面；以 EDT 规则更新界面。 | controller、dto、entity（只读展示）、exception（仅捕获 AppException） | 禁止 import dao / service.impl；禁止出现 SQL 或 JDBC；禁止在事件处理方法里做耗时查询（须 SwingWorker）
+控制层 | controller | 接收界面参数并做格式校验入口；调用 Service；把实体/DTO 封装为界面可直接消费的结果；把异常翻译为提示文案。 | service（接口）、dto、entity、exception、util（Validator） | 禁止写业务规则判定（如信用分阈值）；禁止直接调用 dao；禁止持有 Connection
+业务层 | service / service.impl | 实现 BR-01～BR-12；编排多个 DAO 完成一次业务用例；声明事务边界；触发领域事件（观察者）。 | dao（接口）、entity、dto、util、exception、config；impl 额外依赖 impl 的 DAO 由工厂获得 | 禁止出现 Swing 类；禁止自己拼 SQL；禁止 catch 后吞掉异常不记录日志
+数据访问层 | dao / dao.impl | 执行 SQL、映射 ResultSet 到实体、回填自增主键；用 PreparedStatement 防注入；以 Optional 表达不存在。 | entity、dto、util（DbUtil）、exception、config | 禁止业务规则判定；禁止开启/提交事务（事务由 service 控制）；禁止返回 null 表示查询失败
+实体层 | entity | 与 11 张表一一对应的数据载体，含 5 个枚举；字段名与表字段一一对应。 | 无（仅 java.time / java.math） | 禁止引入 DAO/Service 依赖；禁止写 SQL；禁止放置业务方法
+横切 | dto / util / exception / config | dto：跨层传输对象（查询条件、分页结果、统计行）；util：无状态工具；exception：统一异常；config：配置常量与读取。 | exception/util/config 可被全部层依赖；dto 被 ui/controller/service/dao 共享 | 禁止横切包反向依赖 ui/controller/service/dao（否则形成循环依赖）
+
+[表 6]
+编号 | 规则 | 允许 | 禁止 | 检查方式
+R1 | 单向依赖 | 上层 import 下层 | 下层 import 上层 | 检查每个源文件的 import 段所属包
+R2 | 禁止跨层 | ui→controller→service→dao 逐层调用 | ui 直接调 service.impl 或 dao；controller 直接调 dao | grep “DaoImpl|Dao” in ui/controller
+R3 | 面向接口 | new 实现类只出现在工厂类中 | 业务代码出现 new UserDaoImpl() / new ItemServiceImpl() | grep “new .*Impl(” 排除工厂与测试
+R4 | 实现类不外泄 | 接口方法的返回类型只出现接口、实体、DTO 与 JDK 类型 | Service 接口返回 dao.impl 类型 | 检查 service 包 import
+R5 | 事务单一入口 | service.impl 调用 DbUtil.begin/commit/rollback | ui、controller、dao 中出现 commit/rollback | grep “commit(|rollback(”
+R6 | 无 Swing 泄漏 | ui 包 import javax.swing | service/dao/entity/util 中出现 javax.swing | grep “javax.swing” 限定包范围
+R7 | SQL 唯一落点 | SQL 字符串只出现在 dao.impl | controller/service 中出现 “SELECT|INSERT|UPDATE|DELETE ” | grep 关键字排除 dao.impl
+R8 | 异常单向 | 业务失败抛 AppException 子类 | return null / return false 掩盖失败（除约定为布尔的查询） | 走查 catch 块与返回值
+
+[表 7]
+包名 | 职责 | 允许依赖 | 典型类
+edu.campus.recycle.ui | 表现层：Swing 窗体、面板、表格模型、事件监听器、SwingWorker 后台任务 | controller、dto、entity、exception、util(Validator) | LoginFrame、MainFrame、PublishItemFrame、SearchFrame、MyItemFrame、TradeFrame、ReviewFrame、StatisticFrame、AdminFrame、ItemTableModel
+edu.campus.recycle.controller | 控制层：参数格式校验入口、Service 调用适配、结果封装、异常翻译 | service、dto、entity、exception、util | UserController、ItemController、TradeController、ReviewController、StatisticController、AdminController
+edu.campus.recycle.service | 业务接口层：声明 7 个 Service 接口，是 controller 唯一可见的业务类型 | entity、dto、exception（仅类型引用） | UserService、ItemService、FavoriteService、TradeService、ReviewService、StatisticService、AdminService
+edu.campus.recycle.service.impl | 业务实现层：实现业务规则、编排 DAO、声明事务边界、发布领域事件 | dao、entity、dto、util、exception、config、service | UserServiceImpl、ItemServiceImpl、FavoriteServiceImpl、TradeServiceImpl、ReviewServiceImpl、StatisticServiceImpl、AdminServiceImpl
+edu.campus.recycle.dao | 数据访问接口层：声明 BaseDao 与 11 个表级 DAO 接口 | entity、dto、exception（仅类型引用） | BaseDao、UserDao、ItemDao、TradeFlowDao、SystemConfigDao…（共 12 个接口）
+edu.campus.recycle.dao.impl | 数据访问实现层：JDBC + PreparedStatement、ResultSet 映射、模板方法复用 | dao、entity、dto、util(DbUtil)、config、exception | AbstractJdbcDao、UserDaoImpl、ItemDaoImpl、TradeFlowDaoImpl、DaoFactory（或置于 util，见 3.3）
+edu.campus.recycle.entity | 实体层：11 个与表一一对应的实体 + 5 个枚举 | 无业务依赖（仅 java.time / java.math） | User、Item、TradeFlow、Review、CreditLog、SystemConfig；Role、UserStatus、TradeType、ItemStatus、FlowStatus
+edu.campus.recycle.dto | 跨层传输对象：查询条件、分页结果、统计行、聚合视图 | entity（可引用） | ItemQuery、PageResult<T>、StatisticsDTO、UserCreditDTO、LoginResult、TradeDetailDTO
+edu.campus.recycle.util | 工具类：连接池/事务工具、密码摘要、校验、CSV 导出、配置单例、DAO 与 Service 工厂、JDBC 回调接口 | exception、config（工具类不依赖业务层） | DbUtil、PasswordUtil、Validator、CsvExporter、ConfigManager、DaoFactory、ServiceFactory、RowMapper、ConnectionCallback、TransactionCallback
+edu.campus.recycle.exception | 自定义异常体系：1 个基类 + 9 个子类，含统一工厂方法 of(code, userMessage, cause) | 无（仅 JDK） | AppException、ValidationException、DuplicateEntityException…TransactionException
+edu.campus.recycle.config | 配置：数据库连接配置、应用常量、初始化入口 | exception（读取失败时抛出 DataAccessException） | DbConfig、AppConfig
+
+[表 8]
+依赖方＼被依赖方 | ui | controller | service | service.impl | dao | dao.impl | entity | dto | util | exception | config
+ui |  | √ |  |  |  |  | √ | √ | √ | √ | √
+controller |  |  | √ |  |  |  | √ | √ | √ | √ | 
+service |  |  |  |  |  |  | √ | √ |  | √ | 
+service.impl |  |  | √ |  | √ |  | √ | √ | √ | √ | √
+dao |  |  |  |  |  |  | √ | √ |  | √ | 
+dao.impl |  |  |  |  | √ |  | √ | √ | √ | √ | √
+entity |  |  |  |  |  |  |  |  |  |  | 
+dto |  |  |  |  |  |  |  |  |  |  | 
+util |  |  |  |  |  |  |  |  |  | √ | √
+exception |  |  |  |  |  |  |  |  |  |  | 
+config |  |  |  |  |  |  |  |  |  | √ | 
+
+[表 9]
+模块 | 职责 | 对外接口（Service / DAO） | 依赖模块 | 负责人
+M1 用户模块 | 注册、登录、密码加密、角色区分、账号锁定与解冻、个人信用分展示 | UserService（8 个方法）、UserDao | M8 基础设施 | 成员2（业务）/ 成员3（UI）
+M2 物品模块 | 发布、修改、下架自己的物品、详情浏览、分类选择、图片绑定、管理员审核 | ItemService（6 个方法）、ItemDao、ItemImageDao | M1 用户（信用分校验）、M8 | 成员2（业务）/ 成员3（UI）
+M3 检索收藏模块 | 关键词模糊检索、分类/价格/流转方式/状态筛选、排序、分页、收藏 toggle 与收藏数维护 | ItemService.search、FavoriteService（2 个方法）、FavoriteDao | M2 物品、M8 | 成员2（业务）/ 成员3（UI）
+M4 流转模块 | 意向申请、同意、成交确认（跨表事务）、取消、历史记录、沟通消息 | TradeService（5 个方法）、TradeFlowDao、TradeMessageDao | M1 用户、M2 物品、M8 | 成员2（业务）/ 成员3（UI）
+M5 评价信用模块 | 流转完成后双方互评、评价唯一性、信用分增减与 credit_log 快照 | ReviewService（1 个方法）、UserService.updateCredit、ReviewDao、CreditLogDao | M4 流转、M8 | 成员2（业务）/ 成员3（UI）
+M6 统计导出模块 | 按分类统计流转数量与金额、低碳减排估算、CSV 导出 | StatisticService（3 个方法）、ItemDao.countByCategory、TradeFlowDao.countByCategoryForPeriod、CsvExporter | M2、M4、M8 | 成员2（业务）/ 成员3（导出 UI）
+M7 管理员模块 | 用户冻结/解冻、违规物品下架与审核、分类维护、操作日志查看、全平台统计 | AdminService（3 个方法）、UserService.freezeUser/unfreezeUser、ItemService.audit/offShelf、OperationLogDao、CategoryDao | M1、M2、M4、M6、M8 | 成员2（业务）/ 成员3（UI）
+M8 基础设施模块 | 分层骨架、DbUtil 连接与事务、异常体系、日志、校验工具、配置、DAO/Service 工厂、Maven 构建 | BaseDao、AbstractJdbcDao、DbUtil、PasswordUtil、Validator、CsvExporter、ConfigManager、DaoFactory、ServiceFactory、AppException 体系 | 无（被全部模块依赖） | 成员1（设计）/ 成员2、成员3（复用）
+
+[表 10]
+调用方模块 | 被调用模块 | 协作方式（接口方法） | 说明
+M2 物品 | M1 用户 | UserService.findById(userId)；UserService.updateCredit(userId, delta, flowId, reason) | 发布前校验信用分 ≥60（BR-04）
+M3 检索收藏 | M2 物品 | ItemService.search(ItemQuery)、ItemService.detail(itemId) | 检索与详情复用物品模块能力
+M4 流转 | M2 物品 | ItemService.detail(itemId)；ItemDao.updateStatus(itemId, "LOCKED"/"SOLD", remark) | 流转改变物品状态（BR-05/BR-06）
+M4 流转 | M1 用户 | UserService.updateCredit(userId, delta, flowId, reason) | 成交后双方加分，写 credit_log 快照
+M5 评价信用 | M4 流转 | TradeService.history(userId, status, pageNo, pageSize)；TradeFlowDao.findById(flowId) | 评价前置条件：流转必须 DONE（BR-08）
+M6 统计导出 | M2、M4 | ItemDao.countByCategory()；TradeFlowDao.countByCategoryForPeriod(from, to) | 只读聚合查询，不修改业务数据
+M7 管理员 | M1、M2 | UserService.freezeUser/unfreezeUser；ItemService.audit/offShelf | 管理员能力复用用户与物品模块的业务规则
+全部模块 | M8 基础设施 | DbUtil、ConfigManager、DaoFactory、ServiceFactory、Validator、AppException | 横向复用，不产生业务耦合
+
+[表 11]
+需求/规则 | 编号 | 归属模块 | 主要实现类
+用户账号（注册/登录/密码加密/角色） | FR-01、BR-01、BR-02 | M1 用户 | UserServiceImpl、PasswordUtil
+连续失败锁定 15 分钟 | BR-03 | M1 用户 | UserServiceImpl、UserDao.updateFailCount
+闲置物品发布/修改/下架 | FR-02、BR-12 | M2 物品 | ItemServiceImpl、ItemImageDao
+物品检索与筛选、收藏 | FR-03、BR-09 | M3 检索收藏 | ItemServiceImpl.search、FavoriteServiceImpl
+供需沟通与流转记录 | FR-04、BR-05、BR-06 | M4 流转 | TradeServiceImpl、TradeFlowDao、TradeMessageDao
+流转成交事务与回滚 | BR-07 | M4 流转 | TradeServiceImpl.confirm、AbstractJdbcDao.executeInTransaction
+评价与信用分 | FR-05、BR-08 | M5 评价信用 | ReviewServiceImpl、UserServiceImpl.updateCredit
+统计与 CSV 导出 | FR-06 | M6 统计导出 | StatisticServiceImpl、CsvExporter
+管理员后台（用户/物品/分类/日志） | FR-07、BR-10、BR-11 | M7 管理员 | AdminServiceImpl、ItemServiceImpl.audit、OperationLogDao
+GUI 事件驱动交互 | FR-08（NFR 交互性） | M1～M7 | ui 包窗体 + SwingWorker
+
+[表 12]
+方法 | 可能抛出的异常 | 触发场景
+findById(ID id) | DataAccessException（DB-101） | 连接获取失败、SQL 语法/列名错误、结果集映射失败
+findAll() | DataAccessException（DB-101） | 全表查询失败；数据量过大时由上层控制，不在 DAO 分页
+insert(T entity) | DataAccessException（DB-102） | 主键冲突、NOT NULL/CHECK/UNIQUE 约束违反、磁盘只读
+update(T entity) | DataAccessException（DB-103） | 主键不存在时返回 0 行（不抛异常），约束违反抛异常
+deleteById(ID id) | DataAccessException（DB-104） | 被外键 ON DELETE RESTRICT 引用时删除失败
+
+[表 13]
+方法 | 可能抛出的异常 | 触发场景
+findByUsername(String username) | DataAccessException（DB-111） | 按登录名查询失败；查不到返回 Optional.empty()
+existsByUsername(String u) | DataAccessException（DB-112） | 唯一性预检 SQL 失败
+existsByStudentNo(String no) | DataAccessException（DB-112） | 学号唯一性预检 SQL 失败
+findByCondition(String keyword, String role, int pageNo, int pageSize) | DataAccessException（DB-113） | 动态条件 SQL 拼接或分页参数绑定失败
+countByCondition(String keyword, String role) | DataAccessException（DB-113） | 与 findByCondition 同条件的 COUNT 查询失败
+updateLoginSuccess(int userId, LocalDateTime loginTime) | DataAccessException（DB-114） | 登录成功时更新 last_login_at/重置 fail_count 失败
+updateFailCount(int userId, int failCount, LocalDateTime lockedUntil) | DataAccessException（DB-114） | 登录失败计数或锁定时间写入失败
+updateCreditScore(int userId, int newScore) | DataAccessException（DB-114） | 信用分更新失败；0–150 区间由 CHECK 与 BR-04 双重把关
+updateStatus(int userId, String status) | DataAccessException（DB-114） | 账号状态（ACTIVE/FROZEN/CANCELLED）更新失败
+
+[表 14]
+方法 | 可能抛出的异常 | 触发场景
+findEnabled() | DataAccessException（DB-121） | 查询 enabled=1 的分类失败
+findByParentId(Integer parentId) | DataAccessException（DB-121） | parentId 为 null 时查询一级分类失败
+existsByName(Integer parentId, String name) | DataAccessException（DB-122） | 同一父分类下重名预检失败
+updateEnabled(int id, boolean enabled) | DataAccessException（DB-123） | 分类启用/停用失败；被 item 引用不影响本字段更新
+
+[表 15]
+方法 | 可能抛出的异常 | 触发场景
+insert(Item item)（回填自增主键） | DataAccessException（DB-131） | 外键 owner_id/category_id 不存在、CHECK 约束违反；成功后 item.id 被回填
+findById(int id) | DataAccessException（DB-132） | 详情查询失败；查不到返回 Optional.empty()
+search(ItemQuery q) | DataAccessException（DB-133） | 动态 SQL 拼接（关键词/分类/价格区间/状态/排序）失败
+countSearch(ItemQuery q) | DataAccessException（DB-133） | 分页总数统计失败
+updateStatus(int itemId, String status, String remark) | DataAccessException（DB-134） | 物品状态机流转写入失败（ON_SALE/LOCKED/SOLD/OFF_SHELF/REJECTED）
+increaseViewCount(int itemId) | DataAccessException（DB-135） | 浏览数自增失败（详情页每次打开 +1）
+increaseFavoriteCount(int itemId, int delta) | DataAccessException（DB-135） | 收藏数增减失败；delta 为 +1/-1，防止收藏数变负由业务保证
+findByOwnerId(int ownerId) | DataAccessException（DB-132） | 我的物品列表查询失败
+countByCategory() | DataAccessException（DB-136） | 统计报表按分类聚合失败（返回 StatisticsDTO 列表）
+
+[表 16]
+方法 | 可能抛出的异常 | 触发场景
+batchInsert(List<ItemImage> images) | DataAccessException（DB-141） | 图片记录批量插入失败；须在同一事务内与 item 插入一起提交
+findByItemId(int itemId) | DataAccessException（DB-142） | 按物品查询图片列表（sort_order=0 为首图）失败
+deleteByItemId(int itemId) | DataAccessException（DB-143） | 删除物品时级联清理图片记录失败
+
+[表 17]
+方法 | 可能抛出的异常 | 触发场景
+exists(int userId, int itemId) | DataAccessException（DB-151） | 收藏存在性判断失败，用于实现 toggle 语义（BR-09）
+insert(Favorite f) | DataAccessException（DB-152） | UNIQUE(user_id, item_id) 冲突（并发重复收藏）
+delete(int userId, int itemId) | DataAccessException（DB-153） | 取消收藏失败
+findItemsByUserId(int userId) | DataAccessException（DB-154） | 我的收藏列表查询失败（需 join item）
+countByItemId(int itemId) | DataAccessException（DB-155） | 收藏数核对查询失败
+
+[表 18]
+方法 | 可能抛出的异常 | 触发场景
+insert(TradeMessage m) | DataAccessException（DB-161） | 发送沟通消息失败（内容 ≤300 字由业务层校验）
+findConversation(int userId, int otherUserId, int itemId) | DataAccessException（DB-162） | 按双方 + 物品查询会话失败，结果按时间升序
+markRead(int toUserId, int itemId) | DataAccessException（DB-163） | 将接收方未读消息标记已读失败
+countUnread(int userId) | DataAccessException（DB-164） | 未读消息数统计失败（主界面角标）
+
+[表 19]
+方法 | 可能抛出的异常 | 触发场景
+insert(TradeFlow f)（回填主键） | DataAccessException（DB-171） | 部分唯一索引 uq_flow_item_active 冲突（同一物品已有进行中流转，BR-05）
+findActiveByItemId(int itemId) | DataAccessException（DB-172） | 查询物品进行中（APPLYING/AGREED）流转失败
+findById(int id) | DataAccessException（DB-172） | 查询流转详情失败，查不到返回 Optional.empty()
+updateStatus(int flowId, String status, String cancelReason, LocalDateTime finishedAt) | DataAccessException（DB-173） | 状态机更新失败（APPLYING→AGREED→DONE / CANCELLED）
+findByUserId(int userId, String status, int pageNo, int pageSize) | DataAccessException（DB-174） | 我的流转记录分页查询失败，userId 可为卖方或买方
+countByUserId(int userId, String status) | DataAccessException（DB-174） | 流转记录总数统计失败
+countByCategoryForPeriod(LocalDateTime from, LocalDateTime to) | DataAccessException（DB-175） | 按时间区间 + 分类统计流转量与金额失败
+
+[表 20]
+方法 | 可能抛出的异常 | 触发场景
+insert(Review r) | DataAccessException（DB-181） | UNIQUE(flow_id, reviewer_id) 冲突（同一流转重复评价，BR-08）
+existsByFlowAndReviewer(int flowId, int reviewerId) | DataAccessException（DB-182） | 评价唯一性预检失败
+findByRevieweeId(int revieweeId) | DataAccessException（DB-183） | 查询某用户收到的评价失败
+avgScoreByRevieweeId(int revieweeId) | DataAccessException（DB-183） | 平均评分计算失败；无评价时约定返回 0.0
+
+[表 21]
+方法 | 可能抛出的异常 | 触发场景
+insert(CreditLog log) | DataAccessException（DB-191） | 信用流水插入失败；必须与信用分更新在同一事务（BR-04/BR-07）
+findByUserId(int userId, int limit) | DataAccessException（DB-192） | 查询最近 N 条信用变更失败（个人信用页展示）
+
+[表 22]
+方法 | 可能抛出的异常 | 触发场景
+insert(OperationLog log) | DataAccessException（DB-201） | 关键操作日志写入失败；日志仅追加不修改（BR-11）
+findRecent(int limit) | DataAccessException（DB-202） | 管理员后台查询最近日志失败
+
+[表 23]
+方法 | 可能抛出的异常 | 触发场景
+getValue(String key) | DataAccessException（DB-211） | 读取配置失败；键不存在返回 null，由 ConfigManager 回退默认值
+getInt(String key, int defaultValue) | DataAccessException（DB-211） | 配置值非整数格式时返回 defaultValue，不抛解析异常
+getDouble(String key, double defaultValue) | DataAccessException（DB-211） | 配置值非浮点格式时返回 defaultValue
+upsert(String key, String value, String description) | DataAccessException（DB-212） | 配置键写入失败（config_key UNIQUE 冲突时转为更新）
+
+[表 24]
+方法 | 可能抛出的异常 | 触发场景
+register(String username, String rawPassword, String realName, String studentNo, String role, String college, String contact) | ValidationException（VAL-001：用户名/密码/学号格式，BR-01） DuplicateEntityException（DUP-001 用户名已存在、DUP-002 学号已存在） TransactionException（TX-002：user + operation_log 未同事务提交） | 注册新账号，密码经 PBKDF2 加盐摘要后存储（BR-02）
+login(String username, String rawPassword) throws AuthenticationException, AccountLockedException | AuthenticationException（AUTH-001：用户名不存在或密码错误） AccountLockedException（LOCK-001：连续失败 5 次锁定 15 分钟，BR-03） | 登录校验；锁定期间即使密码正确也拒绝并提示剩余时间
+changePassword(int userId, String oldPwd, String newPwd) | AuthenticationException（AUTH-002：原密码错误） ValidationException（VAL-002：新密码不符合 BR-01） EntityNotFoundException（NF-002：用户不存在） | 修改密码后清空 fail_count 与 locked_until
+findById(int userId) | EntityNotFoundException（NF-001：用户不存在） | 按主键取用户（含信用分）
+queryUsers(String keyword, String role, int pageNo, int pageSize) | EntityNotFoundException 不抛出（空结果返回空列表） DataAccessException（DB-113） | 管理员用户管理列表，分页查询
+freezeUser(int operatorId, int userId) | PermissionDeniedException（PERM-001：操作人非 ADMIN） BusinessRuleException（BR-10：不能冻结自己/最后一个管理员） | 冻结账号并写 operation_log
+unfreezeUser(int operatorId, int userId) | PermissionDeniedException（PERM-001：操作人非 ADMIN） EntityNotFoundException（NF-001） | 解冻账号，状态恢复 ACTIVE
+updateCredit(int userId, int delta, Integer flowId, String reason) | BusinessRuleException（BR-04：结果分数越界 [0,150]） EntityNotFoundException（NF-001） | 信用分增减并写 credit_log 快照，供流转/评价复用
+
+[表 25]
+方法 | 可能抛出的异常 | 触发场景
+publish(Item item, List<String> imagePaths) | ValidationException（VAL-011：标题 2–50 字/价格 ≥0/图片 ≤5 张且 jpg-png，BR-12） BusinessRuleException（BR-04：信用分 < 60 禁止发布；BR-05：状态非法） TransactionException（TX-011：item + item_image + operation_log 未同事务提交） | 发布闲置物品，写 item 后回填 itemId，图片路径为 data/images/{itemId}/{uuid}.jpg
+updateItem(Item item, int operatorId) | PermissionDeniedException（PERM-011：非发布者且非管理员） EntityNotFoundException（NF-011：物品不存在） ValidationException（VAL-011） | 修改自己发布的物品（SOLD 状态不可修改）
+offShelf(int itemId, int operatorId) | PermissionDeniedException（PERM-012：非发布者且非管理员） EntityNotFoundException（NF-011） | 下架物品；若存在进行中流转，同时取消流转（BR-10）
+search(ItemQuery query) | DataAccessException（DB-133：动态 SQL 或排序策略失败） | 检索筛选 + 排序 + 分页，返回 PageResult<Item>
+detail(int itemId) | EntityNotFoundException（NF-012：物品不存在） | 详情展示，同时 view_count +1
+audit(int operatorId, int itemId, boolean pass, String remark) | PermissionDeniedException（PERM-013：非 ADMIN） BusinessRuleException（BR-10：物品状态非 PENDING） | 管理员审核：通过转 ON_SALE，驳回转 REJECTED 并写 audit_remark
+
+[表 26]
+方法 | 可能抛出的异常 | 触发场景
+toggle(int userId, int itemId) | DataAccessException（DB-151/DB-152/DB-153） EntityNotFoundException（NF-021：物品不存在） | 收藏/取消收藏 toggle（BR-09）；返回 true=已收藏，同时更新 item.favorite_count
+listByUser(int userId) | DataAccessException（DB-154） | 我的收藏列表
+
+[表 27]
+方法 | 可能抛出的异常 | 触发场景
+apply(int itemId, int buyerId, String remark) | BusinessRuleException（BR-05：物品已 SOLD 或已有进行中流转；BR-06：非 ON_SALE；不能申请自己的物品） EntityNotFoundException（NF-022：物品不存在） | 发起流转申请，状态 APPLYING，写 operation_log
+agree(int flowId, int operatorId) | PermissionDeniedException（PERM-021：操作人非出让方） BusinessRuleException（BR-06：流转状态非 APPLYING） | 出让方同意申请，APPLYING→AGREED，物品置 LOCKED
+confirm(int flowId, int operatorId)（跨表事务） | PermissionDeniedException（PERM-022：操作人非买卖双方） BusinessRuleException（BR-06：状态非 AGREED） TransactionException（TX-001：任一写失败整体回滚） | 成交确认：item→SOLD、flow→DONE、双方 credit_log + 分数、operation_log，同一事务（BR-07）
+cancel(int flowId, int operatorId, String reason) | PermissionDeniedException（PERM-023：非出让方且非管理员） EntityNotFoundException（NF-023：流转不存在） | 取消流转，状态→CANCELLED，物品由 LOCKED 回到 ON_SALE
+history(int userId, String status, int pageNo, int pageSize) | DataAccessException（DB-174） | 我的流转历史（作为买方或卖方），按状态过滤分页
+
+[表 28]
+方法 | 可能抛出的异常 | 触发场景
+review(int flowId, int reviewerId, int score, String content) | BusinessRuleException（BR-08：流转未 DONE / 自评 / 分数不在 1–5） DuplicateEntityException（DUP-041：同一流转同一人重复评价） EntityNotFoundException（NF-031：流转不存在） TransactionException（TX-041：review + credit 更新 + credit_log 未同事务） | 流转完成后评价对方，按分档变更对方信用分（≥4 加 2；≤2 减 5），写 credit_log 快照
+
+[表 29]
+方法 | 可能抛出的异常 | 触发场景
+statisticsByCategory(LocalDateTime from, LocalDateTime to) | DataAccessException（DB-175） | 按分类统计流转数量、总金额、减排量
+carbonReduction(LocalDateTime from, LocalDateTime to) | DataAccessException（DB-175） BusinessRuleException（BR-031：分类缺少碳减排系数配置） | 低碳减排估算，系数来自 system_config 的 carbon.factor.*，由 CarbonFactorStrategy 选择
+exportCsv(Path target, LocalDateTime from, LocalDateTime to) | IOException（文件路径不可写/磁盘满） DataAccessException（DB-175） | 导出 CSV 报表，返回实际写入的绝对路径字符串
+
+[表 30]
+方法 | 可能抛出的异常 | 触发场景
+addCategory(int operatorId, String name, Integer parentId) | DuplicateEntityException（DUP-051：同一父分类下重名） PermissionDeniedException（运行时 PERM-051：非 ADMIN） | 新增分类（两级），写 operation_log
+toggleCategory(int operatorId, int categoryId, boolean enabled) | PermissionDeniedException（运行时 PERM-051） EntityNotFoundException（NF-051：分类不存在） | 启用/停用分类；停用后不可被检索与发布选择
+recentLogs(int limit) | PermissionDeniedException（运行时 PERM-051） DataAccessException（DB-202） | 管理员后台查看最近操作日志
+
+[表 31]
+检查项 | 期望值 | 实际值 | 结论
+接口总数（BaseDao + DAO + util 回调 + Service） | 22 | 1 + 11 + 3 + 7 = 22 | 通过
+BaseDao 方法数 | 5 | 5 | 通过
+11 个 DAO 自有方法数 | 53 | 53 | 通过
+util 回调接口方法数 | 3 | RowMapper.mapRow / ConnectionCallback.doInConnection / TransactionCallback.doInTransaction | 通过
+7 个 Service 方法数 | 28 | 28 | 通过
+方法总数 | 89 | 5 + 53 + 3 + 28 = 89 | 通过
+签名逐字对齐契约第 5、6 节 | 逐字一致 | 类名/方法名/参数顺序/返回类型/throws 均取自契约原文 | 通过
+util 回调接口签名对齐 code | 逐字一致 | mapRow / doInConnection / doInTransaction 与 edu.campus.recycle.util 源文件一致（见 5.7 节） | 通过
+DAO 接口继承 BaseDao | 【建议补充】 | 11 个接口均 extends BaseDao<实体, Integer>，不新增方法 | 已标注
+
+[表 32]
+接口/抽象类 | 方法签名草案 | 用途 | 实现者
+ItemSortStrategy | String buildOrderBy(ItemQuery q) | 策略模式：最新/价格升/价格降/信用优先 4 种排序 SQL 片段 | LatestSortStrategy、PriceAscSortStrategy、PriceDescSortStrategy、CreditFirstSortStrategy
+CarbonFactorStrategy | double factorFor(Category category) | 策略模式：按分类取 system_config 中的碳减排系数 | DefaultCarbonFactorStrategy
+ItemEventBus | void publish(ItemEvent e); void subscribe(ItemEventType t, ItemEventListener l) | 观察者模式：流转完成等事件的发布/订阅 | SimpleItemEventBus
+ItemEventListener | void onEvent(ItemEvent e) | 观察者模式：监听器统一接口 | CreditChangeListener、OperationLogListener、StatisticListener
+ItemQueryBuilder | ItemQueryBuilder keyword(String k) / categoryId(Integer id) / … / build() | 建造者模式：多可选检索条件组合（备选模式，见 7.7） | ItemQueryBuilder 自身
+AbstractJdbcDao<T, ID> | protected abstract String sqlFindById(); … executeInTransaction(Work unit) | 模板方法：统一 JDBC 资源释放与事务提交回滚 | 11 个 DAO 实现类继承
+AbstractCsvExporter | public final String export(Path target, String[] header, List<String[]> rows) | 模板方法：统一 CSV 文件写入与异常转换 | StatisticCsvExporter
+
+[表 33]
+接口（@FunctionalInterface） | 方法签名 | 可能抛出的异常 | 触发场景 / 由谁统一处理
+RowMapper<T> | T mapRow(ResultSet rs) throws SQLException | SQLException | 行映射时列名或类型与实体不匹配；由 AbstractJdbcDao 捕获后包装为 DataAccessException（DB-xxx）
+ConnectionCallback<R> | R doInConnection(Connection conn) throws SQLException | SQLException | 单条 JDBC 操作回调；连接由 AbstractJdbcDao 获取与释放，异常同样包装为 DataAccessException
+TransactionCallback<T> | T doInTransaction(Connection conn) throws Exception | Exception（任意异常均触发整体回滚） | 事务体回调；由 DbUtil.executeInTransaction 统一 commit/rollback，失败包装为 TransactionException（TX-001）
+
+[表 34]
+异常类 | code 前缀 | 语义 | 抛出层 | 是否提示用户
+AppException | — | 所有业务异常的根类型，含 code、userMessage、cause | 全部层 | 按子类
+ValidationException | VAL | 输入格式/取值范围不合法（BR-01、BR-12） | controller、service.impl | 是（字段级提示）
+DuplicateEntityException | DUP | 唯一约束冲突（用户名、学号、分类名、重复评价） | service.impl | 是
+EntityNotFoundException | NF | 按主键查询的目标不存在 | service.impl | 是
+AuthenticationException | AUTH | 登录/改密认证失败 | service.impl | 是
+AccountLockedException | LOCK | 账号锁定中（BR-03） | service.impl | 是（含剩余分钟）
+PermissionDeniedException | PERM | 角色或归属校验失败（BR-06、BR-10） | service.impl | 是
+BusinessRuleException | BR | 违反业务规则，携带 BR 编号（BR-04～BR-10） | service.impl | 是
+DataAccessException | DB | SQL/连接/映射失败，包装 SQLException | dao.impl | 否（提示“系统繁忙”并写日志）
+TransactionException | TX | 事务提交/回滚失败，或整体业务原子性被破坏 | service.impl | 否（提示“操作未完成，请重试”）
+
+[表 35]
+code 示例 | 触发场景（用例/规则） | userMessage 示例 | UI 处理动作
+VAL-001 | 注册：用户名不足 4 位或密码不含数字（BR-01） | 用户名需 4–20 位字母数字下划线；密码需 8–20 位且同时包含字母与数字 | 输入框标红 + 弹窗提示，焦点回到该字段
+VAL-011 | 发布：标题为空、图片超过 5 张或非 jpg/png（BR-12） | 标题需 2–50 字；最多上传 5 张 jpg/png 图片，单张不超过 2MB | 弹窗提示，保留已填内容
+DUP-001 | 注册：用户名已存在 | 该用户名已被注册，请更换 | 清空用户名输入框并聚焦
+DUP-041 | 评价：同一流转重复评价（BR-08） | 你已评价过该次流转，不能重复评价 | 关闭评价窗口并刷新列表
+NF-012 | 详情：物品已被删除或不存在 | 该物品已不存在或已下架 | 关闭详情窗口，刷新列表
+AUTH-001 | 登录：用户名不存在或密码错误 | 用户名或密码错误 | 清空密码框，累计失败计数（不提示哪一项错）
+LOCK-001 | 登录：连续失败 5 次（BR-03） | 账号已锁定，请在 15 分钟后重试（剩余 X 分钟） | 禁用登录按钮并展示倒计时
+PERM-021 | 流转：非出让方点击同意（BR-06） | 只有物品出让方可以执行该操作 | 按钮置灰（界面预先判断）+ 异常兜底
+PERM-001 | 管理员：普通用户调用冻结接口（BR-10） | 当前账号无管理员权限 | 返回主界面并写 operation_log
+BR-04 | 发布：信用分低于 60 | 信用分低于 60，暂不能发布物品 | 弹窗提示，跳转个人信用页
+BR-05 | 流转：物品已成交/已有进行中流转 | 该物品正在流转中或已成交，无法重复申请 | 刷新物品状态后重试
+BR-08 | 评价：流转未完成 | 只有已完成的流转才能评价 | 隐藏评价入口
+DB-171 | 流转：唯一索引 uq_flow_item_active 冲突 | 系统繁忙，请稍后重试 | 写日志，不改界面状态
+TX-001 | 成交：写入过程中任一 SQL 失败并回滚（BR-07） | 操作未完成，数据已恢复，请重试 | 提示后刷新流转与物品列表
+
+[表 36]
+层 | 捕获什么 | 如何处理 | 禁止行为
+dao.impl | SQLException、NumberFormatException | 包装为 DataAccessException（保留 cause，记录 SQL 与参数占位，不记录敏感字段） | 禁止向上抛 SQLException；禁止返回 null 掩盖失败
+service.impl | DataAccessException、业务校验结果 | 业务失败抛 AppException 子类；事务方法内捕获后先 rollback 再包装 TransactionException | 禁止 catch 后不 rollback；禁止把业务失败降级为 return false
+controller | AppException（含全部子类） | 转换为 ControllerResult（成功/失败 + code + 文案），或直接上抛给 ui；记录 operation_log 中的失败操作 | 禁止捕获 Exception 后静默；禁止把堆栈信息展示给用户
+ui | AppException | ErrorMessageMapper 按 code 取文案，JOptionPane 提示；数据访问/事务异常只提示通用文案 | 禁止捕获 SQLException/IOException 等底层异常（说明分层被绕过）
+JVM 兜底 | 未捕获的 Throwable | Thread.setDefaultUncaughtExceptionHandler 记录日志文件与 operation_log，弹“程序遇到问题”后退出当前窗口 | 禁止让未捕获异常直接杀掉 EDT
+
+[表 37]
+# | 模式 | 落点类 | 解决的问题 | 对应课程章节 | 必选/备选
+1 | 单例 | DbUtil、ConfigManager | 避免重复打开 SQLite 连接与重复解析配置 | 第九章 基于复用的软件构造 | 必选
+2 | 工厂 | DaoFactory、ServiceFactory | 上层不 new 实现类，便于替换实现与测试注入 | 第九章 | 必选
+3 | 策略 | ItemSortStrategy、CarbonFactorStrategy | 检索排序与减排估算算法可插拔 | 第九章 | 必选
+4 | 观察者 | ItemEventBus + 3 个 Listener | 成交后的多副作用解耦，新增副作用不改业务方法 | 第九章 | 必选
+5 | 模板方法 | AbstractJdbcDao、AbstractCsvExporter | 统一资源释放、事务提交回滚与异常转换 | 第六章/第八章 | 必选
+6 | 建造者 | ItemQueryBuilder | 多可选检索条件组合，避免超长参数表 | 第三章/第九章 | 备选【建议补充】
+
+[表 38]
+实现类 | 实现接口 | 方法数 | 事务要求（是否需显式事务） | 依赖的 DAO（经 DaoFactory）
+UserServiceImpl | UserService | 8 | register 需事务（user + operation_log）；updateCredit 需事务（credit_score + credit_log）；其余单表操作免事务 | UserDao、CreditLogDao、OperationLogDao、SystemConfigDao
+ItemServiceImpl | ItemService | 6 | publish 需事务（item + item_image + operation_log）；offShelf 涉及流转取消时需事务；audit 需事务 | ItemDao、ItemImageDao、UserDao、OperationLogDao、TradeFlowDao
+FavoriteServiceImpl | FavoriteService | 2 | toggle 需事务（favorite 增删 + item.favorite_count 同步） | FavoriteDao、ItemDao
+TradeServiceImpl | TradeService | 5 | confirm 必须跨表事务（BEGIN IMMEDIATE，校验状态→改 item→改 flow→双方 credit_log + credit_score→operation_log→COMMIT）；agree/cancel 需事务（flow + item 状态） | TradeFlowDao、ItemDao、UserDao、CreditLogDao、OperationLogDao、TradeMessageDao
+ReviewServiceImpl | ReviewService | 1 | review 需事务（review + 对方 credit_score + credit_log 快照 + operation_log） | ReviewDao、TradeFlowDao、UserDao、CreditLogDao、OperationLogDao
+StatisticServiceImpl | StatisticService | 3 | 只读，不开启事务；导出前先查询再写文件，文件失败抛 IOException 不污染数据 | ItemDao、TradeFlowDao、SystemConfigDao
+AdminServiceImpl | AdminService | 3 | addCategory/toggleCategory 需事务（category + operation_log）；recentLogs 只读 | CategoryDao、OperationLogDao
+
+[表 39]
+方法 | 业务规则（必须实现） | 事务 | 失败抛出
+UserService.register | 按 BR-01 校验用户名 4–20 位 [A-Za-z0-9_]、密码 8–20 位含字母与数字、学号 8–12 位数字；校验唯一性；PasswordUtil 生成 16 字节盐并 PBKDF2WithHmacSHA256 迭代 100000 次生成 256 位摘要；初始信用分取 system_config 的 credit.init；写 operation_log | 是（user + operation_log） | ValidationException / DuplicateEntityException / TransactionException
+UserService.login | 按用户名查用户；先判 locked_until 是否晚于当前时间（BR-03）；校验摘要；失败 fail_count+1，达到 5 次写 locked_until=now+15min；成功重置 fail_count、写 last_login_at 与 LOGIN 日志；不得泄露用户名是否存在 | 是（失败计数 + 日志） | AuthenticationException / AccountLockedException
+UserService.changePassword | 校验原密码摘要；新密码按 BR-01 校验；更新 password_hash 与 salt；清空 fail_count/locked_until；写日志 | 是 | AuthenticationException / ValidationException / EntityNotFoundException
+UserService.findById | 按主键查询；不存在抛 NF-001；返回对象不得包含 password_hash/salt 的日志输出 | 否 | EntityNotFoundException
+UserService.queryUsers | 管理员分页查询用户；空结果返回空列表；pageSize 上限 100 | 否 | DataAccessException
+UserService.freezeUser | 校验操作人角色为 ADMIN（PERM-001）；禁止冻结自己（BR-10）；目标状态置 FROZEN；写 operation_log | 是 | PermissionDeniedException / BusinessRuleException
+UserService.unfreezeUser | 校验操作人为 ADMIN；目标状态恢复 ACTIVE；写日志 | 是 | PermissionDeniedException
+UserService.updateCredit | delta 加到当前分数后必须落在 [0,150]（BR-04），超出则截断或抛 BR 异常（约定：抛异常由调用方决定）；更新 credit_score；插入 credit_log（含 delta、score_after 快照、flow_id、reason） | 是（score + log） | BusinessRuleException
+ItemService.publish | 校验 BR-04 信用分 ≥60；校验 BR-12 图片数量/类型；事务内写 item（回填 id）→ 生成相对路径 data/images/{itemId}/{uuid}.jpg 并 batchInsert → 写 operation_log（PUBLISH_ITEM）；提交后发布 ItemEvent | 是（item + image + log） | ValidationException / BusinessRuleException / TransactionException
+ItemService.updateItem | 仅发布者（或管理员）可改（PERM-011）；SOLD 状态不可改；标题/描述/价格按 BR-01/BR-12 复校；updated_at 刷新 | 是 | PermissionDeniedException / EntityNotFoundException / ValidationException
+ItemService.offShelf | 发布者本人或 ADMIN 可下架；状态置 OFF_SHELF 并写 audit_remark；若存在进行中流转，取消流转并通知对方（BR-10） | 是（item + flow + msg + log） | PermissionDeniedException / EntityNotFoundException
+ItemService.search | 把 ItemQuery 交给排序策略生成 ORDER BY；分页参数纠正；委托 ItemDao.search + countSearch 组装 PageResult | 否 | DataAccessException
+ItemService.detail | 查不到抛 NF-012；返回前调用 increaseViewCount(itemId) | 否（浏览数自增允许非事务） | EntityNotFoundException
+ItemService.audit | 仅 ADMIN（PERM-013）；pass=true → ON_SALE 并记 published_at；pass=false → REJECTED 并写 remark；写 operation_log | 是 | PermissionDeniedException / BusinessRuleException
+FavoriteService.toggle | 查询 FavoriteDao.exists：存在则 delete 并 delta=-1；不存在则 insert 并 delta=+1；同步 item.favorite_count 且不小于 0（BR-09）；返回 toggle 后是否收藏 | 是（favorite + 计数） | DataAccessException / EntityNotFoundException
+FavoriteService.listByUser | 按用户查询收藏物品列表（join item，过滤已删除物品） | 否 | DataAccessException
+TradeService.apply | 物品必须 ON_SALE（BR-06）；不能申请自己的物品；物品无进行中流转（BR-05）；写 trade_flow（APPLYING）；写 operation_log | 是 | BusinessRuleException / EntityNotFoundException
+TradeService.agree | 仅出让方可同意（PERM-021）；流转状态必须 APPLYING（BR-06）；flow→AGREED，item→LOCKED；写日志 | 是 | PermissionDeniedException / BusinessRuleException
+TradeService.confirm | 仅买卖双方可确认（PERM-022）；状态必须 AGREED（BR-06）；**跨表事务**：BEGIN IMMEDIATE → item.status=SOLD → trade_flow.status=DONE + finished_at → 双方 credit_score 各 +credit.trade_bonus（默认 +2）→ 两条 credit_log（快照）→ operation_log（CONFIRM_FLOW）→ COMMIT；任一失败 ROLLBACK 并抛 TransactionException（BR-07） | 是（必须，5 张表） | PermissionDeniedException / BusinessRuleException / TransactionException
+TradeService.cancel | 出让方或 ADMIN 可取消（PERM-023）；flow→CANCELLED 并记 cancel_reason；item 由 LOCKED 回 ON_SALE；写日志 | 是 | PermissionDeniedException / EntityNotFoundException
+TradeService.history | 按 userId 查询作为买方或卖方的流转记录，按 status 过滤、分页；空结果返回空列表 | 否 | DataAccessException
+ReviewService.review | 流转必须 DONE（BR-08）；reviewer 必须是该流转参与方且不能自评；score ∈ [1,5]；同一 (flow_id, reviewer_id) 唯一；事务内插入 review → 按分档更新对方信用分（≥4：+credit.trade_bonus；≤2：+credit.bad_review_penalty，负数）→ 写 credit_log 快照 → 写 operation_log | 是（review + credit + log） | BusinessRuleException / DuplicateEntityException / TransactionException
+StatisticService.statisticsByCategory | 按时间区间查询 TradeFlowDao.countByCategoryForPeriod；无数据返回空列表，不抛异常 | 否（只读） | DataAccessException
+StatisticService.carbonReduction | 对每类物品取 CarbonFactorStrategy 的系数（来自 system_config 的 carbon.factor.*），减排量=数量×系数；缺系数抛 BR-031 | 否（只读） | BusinessRuleException / DataAccessException
+StatisticService.exportCsv | 先查询统计行；再经 AbstractCsvExporter 写 TARGET 指定路径；UTF-8（带 BOM 便于 Excel 打开）；返回绝对路径；文件不可写抛 IOException | 否（先查后写） | IOException / DataAccessException
+AdminService.addCategory | 操作人必须 ADMIN（PERM-051）；同一父分类下名称唯一（DUP-051）；最多两级（父分类不得再有父）；写 operation_log | 是 | DuplicateEntityException / PermissionDeniedException
+AdminService.toggleCategory | 操作人必须 ADMIN；分类存在；enabled 取反/置值；停用后检索与发布均不可见；写日志 | 是 | PermissionDeniedException / EntityNotFoundException
+AdminService.recentLogs | 操作人必须 ADMIN；按 id 倒序取最近 limit 条；limit 上限 500 | 否 | PermissionDeniedException / DataAccessException
+
+[表 40]
+编号 | 测试类.方法名 | 断言要点
+TC-01 | UserServiceTest.register_validInput_returnsUserWithHashedPassword | 注册成功；password_hash 为 PBKDF2 摘要且 ≠ 明文；salt 长度 16 字节；初始信用分 100
+TC-02 | UserServiceTest.register_usernameTooShort_throwsValidationException | 3 位用户名抛 ValidationException（VAL-001）
+TC-03 | UserServiceTest.register_passwordWithoutDigit_throwsValidationException | 纯字母密码抛 ValidationException（BR-01）
+TC-04 | UserServiceTest.register_duplicateUsername_throwsDuplicateEntityException | 重复用户名抛 DuplicateEntityException（DUP-001）
+TC-05 | UserServiceTest.login_correctPassword_returnsLoginResultAndResetsFailCount | 登录成功；fail_count=0；last_login_at 非空；返回角色与信用分
+TC-06 | UserServiceTest.login_wrongPassword_increasesFailCount | 抛 AuthenticationException；fail_count 由 0 变 1
+TC-07 | UserServiceTest.login_fiveConsecutiveFailures_locksAccountFor15Minutes | 第 5 次失败后抛 AccountLockedException；locked_until ≈ now+15min
+TC-08 | UserServiceTest.login_duringLock_correctPasswordStillRejected | 锁定期内即使密码正确也抛 AccountLockedException（BR-03）
+TC-09 | ItemServiceTest.publish_creditBelow60_throwsBusinessRuleException | 信用分 59 发布被拒，异常携带 BR-04
+TC-10 | ItemServiceTest.publish_moreThan5Images_throwsValidationException | 6 张图片抛 ValidationException（BR-12）
+TC-11 | ItemServiceTest.publish_validInput_insertsItemAndImagesInOneTransaction | item.id 被回填；图片记录数=路径数；路径形如 data/images/{id}/{uuid}.jpg
+TC-12 | ItemServiceTest.publish_imageInsertFails_rollsBackItem | 桩 DAO 在 batchInsert 抛异常；事务回滚后 item 不存在、无图片记录
+TC-13 | ItemServiceTest.search_keywordAndPriceRange_returnsFilteredPage | 结果均满足关键词与价格区间；total 一致；totalPages 计算正确
+TC-14 | ItemServiceTest.search_sortByPriceAsc_returnsAscendingOrder | 返回列表 price 单调不减（策略模式生效）
+TC-15 | FavoriteServiceTest.toggle_firstTime_returnsTrueAndIncrementsCount | 返回 true；favorite_count +1；favorite 表新增一条
+TC-16 | FavoriteServiceTest.toggle_secondTime_returnsFalseAndDecrementsCount | 返回 false；favorite_count -1，且不小于 0
+TC-17 | TradeServiceTest.apply_itemAlreadySold_throwsBusinessRuleException | SOLD 物品申请被拒，异常携带 BR-05
+TC-18 | TradeServiceTest.confirm_nonParticipant_throwsPermissionDeniedException | 第三方确认抛 PermissionDeniedException（PERM-022）
+TC-19 | TradeServiceTest.confirm_success_updatesAllTablesAtomically | item=SOLD；flow=DONE 且 finished_at 非空；双方 credit +2；两条 credit_log；一条 CONFIRM_FLOW 日志
+TC-20 | TradeServiceTest.confirm_creditLogFails_rollsBackAllChanges | 桩 dao 抛异常后：item 仍 LOCKED、flow 仍 AGREED、credit_score 未变（BR-07）
+TC-21 | ReviewServiceTest.review_duplicate_throwsDuplicateEntityException | 同一流转同一人二次评价抛 DUP-041
+TC-22 | ReviewServiceTest.review_flowNotDone_throwsBusinessRuleException | APPLYING 状态流转评价被拒（BR-08）
+TC-23 | ReviewServiceTest.review_fiveStars_increasesRevieweeCreditByBonus | 被评价人 +2，credit_log.score_after 为变更后快照
+TC-24 | ReviewServiceTest.review_oneStar_decreasesCreditByPenaltyAndNotBelowZero | 被评价人 -5；分数下限 0 且写一条 credit_log
+TC-25 | StatisticServiceTest.carbonReduction_usesCategoryFactor | 按 carbon.factor.book=0.8 等系数计算，结果与手算一致（误差 <0.001）
+TC-26 | StatisticServiceTest.exportCsv_writesHeaderAndRows | 文件存在、表头列名正确、行数=统计行数、返回绝对路径
+TC-27 | AdminServiceTest.addCategory_duplicateName_throwsDuplicateEntityException | 同一父分类下重名抛 DUP-051
+TC-28 | AdminServiceTest.freezeUser_notAdmin_throwsPermissionDeniedException | 普通用户操作抛 PERM-001，且目标用户状态不变
+
+[表 41]
+窗体类 | 职责 | 依赖的 Service 方法 | 关键控件与交互
+LoginFrame（含注册页签） | 登录 / 注册入口；展示登录失败次数与锁定提示 | UserService.login、UserService.register | JTextField 用户名、JPasswordField 密码、登录/注册按钮、角色提示、剩余锁定分钟数标签
+MainFrame | 主界面容器：菜单栏、导航、CardLayout 卡片区、状态栏；按角色渲染菜单 | UserService.findById（当前用户与信用分）、TradeMessageDao.countUnread（经 Controller） | JMenuBar、JToolBar、左侧 JList 导航、状态栏显示“当前用户 / 信用分 / 未读数”
+PublishItemFrame | 发布与修改物品；分类二级联动；图片选择与预览 | ItemService.publish、ItemService.updateItem、CategoryDao.findEnabled/findByParentId（经 Controller） | JComboBox 分类、JSpinner 成色 1–10、JTextArea 描述、JFileChooser（jpg/png、≤2MB）、图片缩略图列表
+SearchFrame | 检索筛选、排序、分页、查看详情、收藏 toggle | ItemService.search、ItemService.detail、FavoriteService.toggle | 关键词框、分类下拉、价格区间、流转方式、排序下拉（对应 4 种策略）、JTable 结果、分页按钮、收藏按钮
+MyItemFrame | 我的物品：在售/已售/下架列表，修改、下架、查看流转 | ItemService.search（ownerId 条件）、ItemService.offShelf、ItemService.updateItem | 状态页签、JTable、右键菜单（修改/下架）、下架二次确认
+TradeFrame | 流转申请、同意、确认成交、取消、沟通消息、历史记录 | TradeService.apply/agree/confirm/cancel/history、ReviewService.review | 流转列表（状态列）、操作按钮按状态置灰（BR-06）、确认成交二次确认、消息面板（JTextArea + 发送）
+ReviewFrame | 对已完成流转的对方评分与评价 | TradeService.history（筛选 DONE）、ReviewService.review | 星级选择（1–5）、评价文本域（≤200 字）、提交按钮（成功后入口隐藏，BR-08）
+StatisticFrame | 分类统计表、减排估算、CSV 导出 | StatisticService.statisticsByCategory、carbonReduction、exportCsv | JTable 统计表、日期区间选择、减排总量标签、导出按钮 + JFileChooser 选择保存路径
+AdminFrame | 用户管理、物品审核/下架、分类维护、操作日志、全平台统计 | UserService.queryUsers/freezeUser/unfreezeUser、ItemService.audit/offShelf、AdminService.addCategory/toggleCategory/recentLogs、StatisticService | JTabbedPane 五个页签（用户/物品/分类/日志/统计）、表格 + 操作按钮、审核备注输入框
+
+[表 42]
+项 | 要求 | 验收方式
+pom.xml 坐标 | groupId=edu.campus / artifactId=green-campus / version=1.0.0；packaging=jar | mvn help:evaluate 或人工核对（本机无 Maven，须说明验证方式）
+编译器 | maven.compiler.release=17；源码 UTF-8；禁止 Java 18+ 语法 | 代码审查 + CI/本机 javac --release 17 验证
+依赖 | xerial sqlite-jdbc（唯一运行时第三方依赖）；JUnit 5（test scope）；Swing 属 JDK 无需依赖 | mvn dependency:tree 输出（或人工核对 pom）
+可执行 jar | 使用 maven-shade-plugin 生成 green-campus-1.0.0.jar，Main-Class=edu.campus.recycle.ui.MainApp（启动入口） | java -jar green-campus-1.0.0.jar 可启动；无 Maven 环境时说明验证限制
+资源打包 | db/schema.sql、db/seed-data.sql 放入 src/main/resources/db；图片目录 data/images 运行时创建 | 解压 jar 检查资源路径；首次启动自动建库
+数据库 | greencampus.db 位于程序运行目录；启动时检测不存在则执行 schema.sql + seed-data.sql | 删除 db 后重启可自举；Python sqlite3 实跑脚本校验（本机无 sqlite3 CLI）
+运行环境 | JDK 17+；无需安装数据库；Windows 桌面双击运行（可附 start.bat） | 在干净目录解压 jar + 双击验证
+交付清单 | jar 包、db 脚本、README 部署说明、源代码工程、JUnit 用例、演示 PPT 与视频 | 对照题目书第七节逐项勾选
+
+[表 43]
+D2 内容 | D3 类图元素（页/类） | 关系类型 | 校验要点
+4.2 节 11 个实体 + 5 个枚举 | 页 1：entity 区 11 个类 + enum 区 5 个枚举 | 关联（Item→User/Category、TradeFlow→User×2、Review→User×2 等）、依赖（实体→枚举） | 类名与契约第 4 节逐字一致；字段数与表字段数一致
+第 4 节 6 个 DTO | 页 1：dto 区 ItemQuery/PageResult/StatisticsDTO/UserCreditDTO/LoginResult/TradeDetailDTO | 依赖（DTO→entity）、聚合（PageResult◇—records、TradeDetailDTO◇—TradeFlow） | 泛型标注 <T>；PageResult 含 records/total/pageNo/pageSize/totalPages
+第 6.2 节异常树 | 页 1：exception 区 AppException + 9 子类 | 继承（9 条 endArrow=block;endFill=0） | 子类数量=9；AppException 字段 code/userMessage
+第 5.7 节 util 工具与异常层：RowMapper / ConnectionCallback / TransactionCallback | 页 2：util 区与 AbstractJdbcDao 模板方法（回调接口不单独建框） | 依赖（DaoImpl ┄→ RowMapper / ConnectionCallback；DbUtil ┄→ TransactionCallback） | mapRow / doInConnection / doInTransaction 签名与 code 的 util 包逐字一致
+第 5 章 12 个 DAO 接口（BaseDao 计 1） | 页 2：左列接口区 | 依赖/实现（DaoImpl ┄▷ Dao） | 方法签名与 D2 表 5-1～5-12 一致
+第 5.4 节 7 个 Service 接口 | 页 2：左列接口区 | 实现（ServiceImpl ┄▷ Service）、依赖（ServiceImpl ┄→ Dao） | 方法签名与 D2 表 5-13～5-19 一致
+第 7 章模式落点 | 页 2：util/config 区（DaoFactory、ServiceFactory、DbUtil、ConfigManager）+ AbstractJdbcDao/AbstractCsvExporter | 依赖（工厂┄→接口）、继承（DaoImpl▷AbstractJdbcDao） | 模式类均可从第 7 章找到出处
+
+[表 44]
+D4 场景 | 对应 D2 章节 | 必须出现的真实签名/规则 | 分支要求
+场景 1 注册与登录 | 5.4 UserService、6.3 AUTH/LOCK、BR-01～BR-03 | UserService.register/login、PasswordUtil（PBKDF2 100000 次 + 16 字节盐）、UserDao.updateFailCount/updateLoginSuccess | alt 成功/密码错误/锁定三分支
+场景 2 发布闲置物品 | 5.4 ItemService.publish、BR-04/BR-12、2.4 节调用链 | ItemServiceImpl.publish、Validator、ItemDao.insert（回填 id）、ItemImageDao.batchInsert、路径 data/images/{itemId}/{uuid}.jpg | alt 信用分<60 拦截、alt 图片/事务失败回滚
+场景 3 检索筛选与收藏 | 5.4 ItemService.search/FavoriteService.toggle、BR-09、7.3 策略 | ItemQueryBuilder.build、ItemSortStrategy.buildOrderBy、ItemDao.search/countSearch、FavoriteDao.exists/insert/delete、ItemDao.increaseFavoriteCount | loop 分页查询、alt 已收藏→取消
+场景 4 流转成交 | 8.3 TradeService.confirm（跨表事务）、BR-05～BR-07 | TradeServiceImpl.confirm(flowId, operatorId)、DbUtil.beginTransaction（BEGIN IMMEDIATE）、ItemDao.updateStatus、TradeFlowDao.updateStatus、UserDao.updateCreditScore、CreditLogDao.insert、OperationLogDao.insert、COMMIT/ROLLBACK | opt/alt 事务失败 ROLLBACK + TransactionException（红字）
+场景 5 评价与信用分 | 5.4 ReviewService、8.3 review、BR-08、7.3 CarbonFactorStrategy 无关 | ReviewServiceImpl.review、ReviewDao.existsByFlowAndReviewer/insert、TradeFlowDao.findById、UserDao.updateCreditScore、CreditLogDao.insert（score_after 快照） | alt 重复评价/未 DONE 拒绝；分档 ±
+场景 6 管理员审核/下架 | 5.4 ItemService.audit/offShelf、AdminService、BR-10/BR-11 | ItemServiceImpl.offShelf(itemId, operatorId)、UserDao.findById（角色校验）、ItemDao.updateStatus、TradeFlowDao.findActiveByItemId/updateStatus、TradeMessageDao.insert（通知）、OperationLogDao.insert | alt 非管理员拒绝；opt 取消进行中流转
+
+[表 45]
+实体类（entity） | 数据库表（D5） | DAO 接口 | 本文章节 | 关键约束
+User | user | UserDao | 5.3.1 / 表 5-2 | username、student_no 唯一；credit_score 0–150；status 枚举
+Category | category | CategoryDao | 5.3.2 / 表 5-3 | UNIQUE(parent_id, name)；enabled 0/1
+Item | item | ItemDao | 5.3.3 / 表 5-4 | status 7 值枚举；price ≥0；condition_level 1–10
+ItemImage | item_image | ItemImageDao | 5.3.4 / 表 5-5 | file_path 相对路径；sort_order=0 首图
+Favorite | favorite | FavoriteDao | 5.3.5 / 表 5-6 | UNIQUE(user_id, item_id)
+TradeMessage | trade_message | TradeMessageDao | 5.3.6 / 表 5-7 | is_read 0/1；content ≤300 字
+TradeFlow | trade_flow | TradeFlowDao | 5.3.7 / 表 5-8 | uq_flow_item_active 部分唯一索引；status 4 值
+Review | review | ReviewDao | 5.3.8 / 表 5-9 | UNIQUE(flow_id, reviewer_id)；score 1–5
+CreditLog | credit_log | CreditLogDao | 5.3.9 / 表 5-10 | score_after 0–150 快照
+OperationLog | operation_log | OperationLogDao | 5.3.10 / 表 5-11 | 日志仅追加；operator_id 可为 NULL
+SystemConfig | system_config | SystemConfigDao | 5.3.11 / 表 5-12 | config_key 唯一；预置 11 个配置键

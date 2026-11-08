@@ -1,0 +1,32 @@
+# ---------- Java 构建产物 ----------
+target/
+build/
+code/green-campus/build/
+*.class
+
+# ---------- Python 缓存 ----------
+__pycache__/
+*.pyc
+
+# ---------- IDE / 编辑器 ----------
+.idea/
+*.iml
+.vscode/
+*.swp
+*~
+
+# ---------- 运行期生成物（可重建，不入库） ----------
+# 运行 start.bat / Main 时自动生成的演示库与导出文件
+迭代一-成员1/code/green-campus/data/greencampus.db
+迭代一-成员1/code/green-campus/data/export/
+# 数据库验证脚本的临时探针库（正式验证库 db/_verify/greencampus.db 保留入库）
+迭代一-成员1/db/_verify/probe.db
+
+# ---------- 系统文件 ----------
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---------- 本地临时备份 ----------
+*.bak
+_tools/_bak_*/

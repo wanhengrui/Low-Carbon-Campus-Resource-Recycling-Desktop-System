@@ -1,0 +1,501 @@
+============================== D1 tables containing 错误码 / VAL- / DUP-
+-- D1 table 2 rows 10
+    章号 | 标题 | 主要内容 | 主要读者
+    1 | 项目概述 | 背景与问题、建设目标、系统范围与不做的事、术语表、约束与依据 | 全员、指导教师
+    2 | 目标用户与角色 | 学生 / 教师 / 管理员三类画像与关注点、角色取值与账号来源 | 全员
+    3 | 功能需求 | FR-01…FR-17：描述、触发者、输入输出、优先级、可判定验收标准、关联数据表与业务规则 | 全员
+    4 | 非功能需求 | NFR-01…NFR-10：性能、安全、易用性、可靠性、可维护性、可移植性、可测试性、容量、可扩展性、国际化 | 全员
+    5 | 用例描述 | UC-01…UC-08：参与者、前置条件、主流程、异常流、后置条件、涉及 FR | 全员、测试人员
+    6 | 角色权限矩阵 | FR-01…FR-17 × 学生 / 教师 / 管理员（允许、禁止、条件允许） | 开发人员、测试人员
+    7 | 业务规则 | BR-01…BR-12 原文、违反时的系统行为与错误码、错误码清单、三层校验落点 | 开发人员、测试人员
+    8 | 需求追踪矩阵 | FR → UC → BR → 数据表 → 责任成员的双向追踪 | 全员、指导教师
+    9 | 需求基线与变更控制 | 基线状态、待确认项与【建议补充】清单、变更流程与签署 | 全员
+-- D1 table 8 rows 8
+    维度 | 内容
+    用户定义 | 在校本科生与研究生，已完成注册并绑定学号；按信用分与账号状态区分可用性
+    典型场景 | 学期末清理教材与考研资料；换代后处置旧数码配件；毕业季集中处理生活物资；开学初寻找低价教材与文体用品
+    核心诉求 | 快速发布闲置物品；按分类与关键词找到需要的物品；与对方确认交付方式；留下可追溯的流转与评价记录
+    关注点 | 发布是否简单（≤3 步到达发布页、图片可批量选择）；检索是否准确（分类 + 关键词 + 价格区间 + 成色）；对方信用是否可靠；物品是否仍有
+    痛点 | 微信群信息被淹没；不清楚对方是否爽约；同一物品被多人同时认领；自己的标签与成色描述无处沉淀
+    使用频率与技术水平 | 低频使用（每学期 3–10 次），非专业用户，要求界面文案直白、错误提示可操作
+    对需求的约束 | 决定 FR-05/06/07/08/09/10/11/12/13 的交互深度；错误提示必须中文且带错误码；发布与检索是 P0 能力
+-- D1 table 14 rows 12
+    字段 | 内容
+    需求编号 | FR-01
+    需求名称 | 用户注册
+    描述 | 未注册用户通过注册界面创建账号。系统校验用户名与学号的唯一性、口令强度、字段格式；role 仅允许 STUDENT 或 TEACHER，AD
+    触发者 | 未注册的在校学生 / 教师
+    前置条件 | 数据库已初始化（schema.sql 与 seed-data.sql 执行完成）；目标 username 与 student_no 在 us
+    输入 | username（4–20 位 [A-Za-z0-9_]）、password（8–20 位，须同时含字母与数字）、confirmPasswo
+    输出 | user 表新增 1 行；注册成功提示并跳转登录页；失败时中文提示 + 错误码（VAL-001/002、DUP-001/002）
+    优先级 | P0
+    验收标准 | ① 给定 user 表已存在 username='alice'，当再次提交 username='alice' 的合法表单，则注册被拒绝并提示
+    关联数据表 | user、system_config
+    关联业务规则 | BR-01（用户名/学号格式与唯一、口令长度）、BR-04（初始信用分与区间）
+-- D1 table 16 rows 12
+    字段 | 内容
+    需求编号 | FR-03
+    需求名称 | 密码加密存储与修改密码
+    描述 | 口令不以明文或可逆形式落库。注册与改密时生成 16 字节随机盐，使用 PBKDF2WithHmacSHA256（100000 次迭代、256
+    触发者 | 已登录用户（学生 / 教师 / 管理员）
+    前置条件 | 已登录且会话有效
+    输入 | oldPassword、newPassword、confirmPassword
+    输出 | 成功提示；user.password_hash、user.salt、user.updated_at 更新；失败提示 VAL-002 / VA
+    优先级 | P0
+    验收标准 | ① 给定任意账号完成注册，当查询 user 表，则 password_hash 与 salt 均非空且均不等于明文口令，salt 解码后为 
+    关联数据表 | user、operation_log
+    关联业务规则 | BR-02（PBKDF2 参数、不得泄露明或盐）、BR-01（口令长度与字符要求）、BR-11（改密写日志）
+-- D1 table 18 rows 12
+    字段 | 内容
+    需求编号 | FR-05
+    需求名称 | 闲置物品发布
+    描述 | 已登录且信用分 ≥ credit.min_publish（默认 60）的用户可发布闲置物品：填写标题、描述、两级分类、流转方式（SELL 售
+    触发者 | 学生 / 教师
+    前置条件 | 已登录；user.credit_score ≥ 60；user.status='ACTIVE'；所选 category 存在且 enable
+    输入 | title（2–50 字）、description（≤500 字）、categoryId（子分类）、tradeType（SELL/EXCHA
+    输出 | item 新增 1 行（status='PENDING'、owner_id=当前用户、view_count=0、favorite_count
+    优先级 | P0
+    验收标准 | ① 给定信用分 65 的用户，当提交合法表单（tradeType='SELL'、price=30），则 item 新增 1 行，status
+    关联数据表 | item、item_image、category、user
+    关联业务规则 | BR-04（发布门槛）、BR-11（发布写日志）、BR-12（图片类型/大小/数量与相对路径）
+-- D1 table 21 rows 12
+    字段 | 内容
+    需求编号 | FR-08
+    需求名称 | 价格区间与成色筛选
+    描述 | 检索条件可叠加价格区间（minPrice、maxPrice，含端点，FREE 物品按 0 计）与成色下限（conditionMin，1–10
+    触发者 | 学生 / 教师 / 管理员
+    前置条件 | 同 FR-07
+    输入 | ItemQuery 的 minPrice、maxPrice、conditionMin
+    输出 | 过滤后的 PageResult<Item>；界面显示「已选筛选条件」标签，可一键清除
+    优先级 | P1
+    验收标准 | ① 给定在售物品价格分布 0–500 元，当设置 minPrice=20、maxPrice=50，则返回结果中所有物品 price ∈ [2
+    关联数据表 | item
+    关联业务规则 | —（筛选条件合法性由 Service 层校验，对应 VAL-005）
+-- D1 table 23 rows 12
+    字段 | 内容
+    需求编号 | FR-10
+    需求名称 | 意向沟通消息
+    描述 | 围绕某件物品，受让方可向出让方发送站内留言（也可在流转申请时附带留言）。消息存trade_message（item_id、from_user
+    触发者 | 学生 / 教师
+    前置条件 | 已登录；目标物品存在；消息双方为该物品的出让方与受让方
+    输入 | itemId、toUserId、content（≤200 字）
+    输出 | trade_message 新增 1 行；接收方未读计数 +1；发送方提示「已发送」
+    优先级 | P1
+    验收标准 | ① 给定用户 B 对 A 的物品发送「还在吗？」，当发送成功，则 trade_message 新增 1 行且 is_read=0，A 的未读
+    关联数据表 | trade_message、user
+    关联业务规则 | BR-11（关键操作写日志）
+-- D1 table 25 rows 12
+    字段 | 内容
+    需求编号 | FR-12
+    需求名称 | 流转完成与双方评价
+    描述 | 出让方同意后，受让方确认完成（confirm）。系统在同一事务内完成：trade_flow.status='DONE'、finished_a
+    触发者 | 受让方确认完成；双方评价
+    前置条件 | trade_flow.status='AGREED'；操作者为该流转的 buyer 或 seller；评价时流转状态为 DONE
+    输入 | flowId、operatorId；review（flowId、reviewerId、score、content）
+    输出 | trade_flow 状态 DONE；item.status='SOLD'；credit_log 新增；review 新增；信用分展示刷新
+    优先级 | P0
+    验收标准 | ① 给定状态为 AGREED 的流转，当受让方确认完成，则 trade_flow.status='DONE'、finished_at 非空、
+    关联数据表 | trade_flow、item、review、credit_log、user、operation_log
+    关联业务规则 | BR-07（完成与信用变更、日志同事务）、BR-08（评价唯一与差评扣分）
+-- D1 table 27 rows 12
+    字段 | 内容
+    需求编号 | FR-14
+    需求名称 | 数据统计与低碳减排估算
+    描述 | 管理员可查看指定时间区间（默认当月）的统计数据：按分类的流转数量、成交金额、物品发布数与活跃用户数；碳减排估算由 CarbonFactorS
+    触发者 | 管理员【建议补充：学生 / 教师可查看本人维度简要统计】
+    前置条件 | 已登录且具备统计权限（ADMIN）；区间内存在 DONE 状态的流转（否则返回空结果）
+    输入 | from、to（LocalDateTime，含端点，from ≤ to）；统计维度（分类统计 / 流转明细）
+    输出 | List<StatisticsDTO>（categoryId、categoryName、flowCount、amount、carbonRed
+    优先级 | P1
+    验收标准 | ① 给定区间内 10 条 DONE 流转（教材 4 件、电子 2 件、日用 4 件），当统计该区间，则碳减排 = 4×0.8 + 2×12.
+    关联数据表 | trade_flow、item、category、system_config
+    关联业务规则 | BR-07（仅 DONE 状态参与统计）
+-- D1 table 30 rows 12
+    字段 | 内容
+    需求编号 | FR-17
+    需求名称 | 分类维护与关键操作日志
+    描述 | 管理员可新增两级分类（父分类 parent_id=NULL，子分类 parent_id=父分类 id）、启用或禁用分类（enabled 0/
+    触发者 | 管理员
+    前置条件 | 已登录且 role='ADMIN'
+    输入 | 分类名称 name、parentId（可空）、categoryId、enabled；日志查询条数 limit（1–500）
+    输出 | category 新增或更新 1 行；日志列表（只读，倒序）；操作结果提示
+    优先级 | P1
+    验收标准 | ① 给定不存在「文体用品」父分类，当新增该父分类，则 category 新增 1 行且 parent_id 为 NULL、enabled=1
+    关联数据表 | category、operation_log、item
+    关联业务规则 | BR-11（日志仅追加、不修改不删除）
+-- D1 table 34 rows 8
+    字段 | 内容
+    需求编号 | NFR-03
+    需求名称 | 易用性
+    目标 | 面向非专业学生用户，主流程无需阅读文档即可完成；错误提示可操作；危险操作有二次确认。
+    度量指标 | 核心路径点击步数 ≤5；错误提示 100% 包含「原因 + 建议 + 错误码」；危险操作 100% 二次确认；主要表单支持 Tab 焦点顺序
+    实现要求 | 界面文案与术语表一致，禁止出现「订单」「商品」等禁用词；表单校验在失焦与提交两个时机提示；发布、下架、冻结、取消流转均弹出确认框；错误提示统
+    验收标准 | ① 给定新用户首次使用，当从首页完成一次物品发布，则总点击次数 ≤5，且无需查阅部署说明。
+② 给定任意 AppException，当界面弹
+    验证方式 | 可用性走查清单 + 组内 3 人与组外 2 名同学的操作记录（点击步数、卡点、提示理解度）。
+-- D1 table 43 rows 9
+    字段 | 内容
+    用例编号 | UC-01
+    用例名称 | 用户注册与登录（含失败锁定）
+    参与者 | 未注册用户、已注册用户
+    前置条件 | 系统已初始化，数据库可读写
+    主流程 | 用户在登录界面点击「注册」，填写用户名、口令、确认口令、姓名、学号、角色、学院、联系方式。
+系统校验用户名与学号唯一性、口令强度与字段格式。
+    异常流 | E1 用户名已存在：提示 DUP-001，停留注册页，不写库。
+E2 口令强度不足或两次不一致：提示 VAL-002，聚焦到口令输入框。
+E
+    后置条件 | user 表新增 1 行；登录成功写入 operation_log；失败计数与锁定时间落库
+    涉及功能需求 | FR-01、FR-02、FR-03、FR-04
+-- D1 table 44 rows 9
+    字段 | 内容
+    用例编号 | UC-02
+    用例名称 | 发布闲置物品
+    参与者 | 学生 / 教师
+    前置条件 | 已登录；信用分 ≥60；存在已启用的子分类
+    主流程 | 用户点击「发布闲置」，系统加载分类树与表单。
+用户填写标题、描述，选择两级分类与流转方式。
+用户填写价格（FREE 时自动置 0 并禁用输入
+    异常流 | E1 信用分 <60：提示 BR-004，发布按钮禁用并显示原因。
+E2 标题超长或为空：提示 VAL-001，聚焦标题输入框。
+E3 FR
+    后置条件 | item 新增 1 行、item_image 新增 1–5 行、operation_log 新增 1 条 PUBLISH_ITEM
+    涉及功能需求 | FR-05、FR-07（分类树）、FR-04（权限）
+-- D1 table 45 rows 9
+    字段 | 内容
+    用例编号 | UC-03
+    用例名称 | 检索物品与收藏
+    参与者 | 学生 / 教师 / 管理员
+    前置条件 | 已登录；库中存在 ON_SALE 物品
+    主流程 | 用户在首页选择分类（可选父分类）、输入关键词、设置排序方式。
+用户可选填写价格区间与成色下限，点击「筛选」。
+系统组装 ItemQuery，
+    异常流 | E1 关键词含特殊字符或单引号：按普通文本参数化查询，无异常且结果正确。
+E2 价格区间非法（min>max 或负数）：提示 VAL-005
+    后置条件 | 无业务数据被修改（收藏除外：favorite ±1 行、item.favorite_count ±1）
+    涉及功能需求 | FR-07、FR-08、FR-09
+-- D1 table 46 rows 9
+    字段 | 内容
+    用例编号 | UC-04
+    用例名称 | 意向沟通
+    参与者 | 学生 / 教师
+    前置条件 | 已登录；目标物品存在且为用户可沟通的物品
+    主流程 | 用户在物品详情页点击「联系对方」，打开消息输入框。
+用户输入留言内容（≤200 字），点击「发送」。
+系统校验内容长度与接收方合法性，写入 
+    异常流 | E1 内容为空或超 200 字：提示 VAL-006，不写库。
+E2 向自己发送消息：拒绝并提示 VAL-001（接收方非法）。
+E3 物品
+    后置条件 | trade_message 新增 1 行、接收方未读计数 +1、operation_log 记录沟通动作
+    涉及功能需求 | FR-10、FR-11（衔接）
+-- D1 table 48 rows 9
+    字段 | 内容
+    用例编号 | UC-06
+    用例名称 | 双方互评与信用分变更
+    参与者 | 受让方、出让方
+    前置条件 | 存在 status='DONE' 的流转；当前用户为该流转参与方且未评价过
+    主流程 | 用户打开「我的流转」，选择状态为 DONE 的记录，点击「评价」。
+用户选择评分（1–5 星）并填写评价内容（≤200 字）。
+系统校验流转
+    异常流 | E1 流转未完成（APPLYING/AGREED）：提示 BR-008，禁止评价。
+E2 同一流转重复评价：唯一约束冲突，提示 DUP-00
+    后置条件 | review 新增 1 行、对方 user.credit_score 变更、credit_log 新增 1 行、operation_log 
+    涉及功能需求 | FR-12、FR-13、BR-04、BR-08
+-- D1 table 49 rows 9
+    字段 | 内容
+    用例编号 | UC-07
+    用例名称 | 统计查看与 CSV 导出
+    参与者 | 管理员
+    前置条件 | 已登录且为 ADMIN；存在 DONE 状态的流转数据
+    主流程 | 管理员进入「数据统计」，系统默认加载当月区间。
+管理员调整起止时间（from、to），点击「统计」。
+系统校验区间合法性，按分类聚合 DON
+    异常流 | E1 from 晚于 to：提示 VAL-007，不执行查询。
+E2 区间内无 DONE 数据：显示「暂无数据」，汇总值 0.00，导出文件
+    后置条件 | 无业务数据修改（只读查询）；导出生成 CSV 文件 1 个；operation_log 记录导出动作
+    涉及功能需求 | FR-14、FR-15、FR-04
+-- D1 table 51 rows 18
+    功能需求 | 覆盖用例 | 覆盖判定说明
+    FR-01 | UC-01 | UC-01 主流程 1–4 步：填写注册信息→唯一性校验→写入 user（credit_score=100）→跳转登录；E1 用户名重复提示
+    FR-02 | UC-01 | UC-01 主流程 5–6 步：口令摘要校验通过写 last_login_at、fail_count 归零；E3/E4 失败计数与锁定（AU
+    FR-03 | UC-01 | UC-01 主流程第 3 步：生成 16 字节随机盐并计算 PBKDF2 摘要写入 password_hash/salt；改口令复用同一加密
+    FR-04 | UC-01/UC-02/UC-04/UC-07/UC-08 | UC-01 第 6 步按角色加载菜单；UC-02/UC-04/UC-07/UC-08 的参与者与前置条件均以角色限定访问边界
+    FR-05 | UC-02 | UC-02 主流程 1–6 步：填写→字段与分类校验→写 item(PENDING)+item_image→跳转「我的发布」；E1/E4 信
+    FR-06 | UC-02/UC-08 | UC-02 完成后进入「我的发布」修改或下架（BR-05 状态锁定）；UC-08 由管理员执行下架并写 audit_remark
+    FR-07 | UC-03 | UC-03 主流程 1、3–4 步：分类与关键词组装 ItemQuery，参数化 SQL 分页查询 ON_SALE 物品
+    FR-08 | UC-03 | UC-03 主流程第 2 步：价格区间与成色下限参与筛选；条件非法由 Service 拦截（VAL-005）
+    FR-09 | UC-03 | UC-03 详情页收藏（toggle，BR-09）；重复收藏幂等不新增行，item.favorite_count 随之增减
+    FR-10 | UC-04 | UC-04 主流程 1–6 步：留言写 trade_message、接收方未读计数 +1；E1/E2 内容与接收方校验（VAL-006）
+    FR-11 | UC-05 | UC-05 主流程 1–3 步写 trade_flow（APPLYING，item 置 LOCKED）→第 4 步转 AGREED；UC-0
+    FR-12 | UC-05/UC-06 | UC-05 主流程 5–7 步确认成交（DONE + item SOLD）；UC-06 双方在 DONE 记录上评价写 review（UNI
+    FR-13 | UC-06 | UC-06 主流程 4–6 步：按评分计算 delta，经 updateCredit 统一入口截断并写 credit_log，刷新信用分与等
+    FR-14 | UC-07 | UC-07 主流程 1–4 步：按区间聚合 DONE 流转，CarbonFactorStrategy 计算碳减排并以表格+柱状图展示
+    FR-15 | UC-07 | UC-07 主流程 5–7 步：AbstractCsvExporter 生成 UTF-8 BOM + CRLF 的 CSV，临时文件改名后提
+    FR-16 | UC-08 | UC-08 主流程 1–4 步审核通过/驳回与下架；第 6 步冻结/解冻用户并连带取消其进行中流转（E3/E4）
+    FR-17 | UC-08 | UC-08 主流程第 2 步填写审核备注、第 7 步「操作日志」按时间倒序查看（BR-11）；分类维护同在该用例的管理后台
+-- D1 table 54 rows 13
+    编号 | 规则原文（逐字引自共享契约 §9） | 涉及数据表 | 违反时的系统行为 | 错误提示 code
+    BR-01 | 用户名 4–20 位 `[A-Za-z0-9_]`，唯一；密码 8–20 位且必须同时含字母与数字；学号 8–12 位数字且唯一。 | user | 注册或改密时前端提示格式错误；Service 再次校验并抛出 VAL-001 / VAL-002 / DUP-001 / DUP-002；数 | VAL-001、VAL-002、DUP-001、DUP-002
+    BR-02 | 密码以 PBKDF2WithHmacSHA256（100000 次迭代、16 字节随机盐、256 位密钥）存储，任何日志/界面不得出现明文或 | user | 统一经 SecurityUtil 摘要与校验；日志与异常信息只出现用户名与操作类型，出现泄露即视为缺陷（P0 阻断） | VAL-002、AUTH-001
+    BR-03 | 连续登录失败 5 次锁定 15 分钟；锁定期间即使密码正确也拒绝登录，并提示剩余时间。 | user | 登录失败累加 fail_count，达阈值写 locked_until；锁定期间拒绝并提示剩余分钟数；成功登录清零 | AUTH-001、LOCK-001
+    BR-04 | 信用分 < 60 的用户禁止发布物品；信用分区间 [0,150]，变更须写 `credit_log` 快照。 | user、credit_log | 发布入口禁用并说明原因；Service 抛 BR-004；每次变更经 UserService.updateCredit 截断区间并写流水 | BR-04
+    BR-05 | 同一物品不可重复成交：`item.status='SOLD'` 后拒绝新申请；同一物品同时只允许一条进行中的流转。 | item、trade_flow | 申请前校验物品状态与进行中流转；数据库部分唯一索引 uq_flow_item_active 兜底；冲突抛 BR-005 | BR-005
+    BR-06 | 只有 `ON_SALE` 物品可被申请；只有出让方可同意/取消；只有受让方（或出让方）确认完成，且必须双方同意流程后。 | item、trade_flow、user | TradeService.apply / agree / confirm / cancel 逐个校验状态机与操作者身份，非法迁移抛 BR-0 | BR-006、PERM-002
+    BR-07 | 流转完成（DONE）与信用分变更、日志写入必须在同一事务内，任一失败整体回滚。 | trade_flow、item、credit_log、user、operation_log | TradeService.confirm 经 AbstractJdbcDao.executeInTransaction 执行，捕获异常回滚并 | TX-001
+    BR-08 | 同一流转中，每位参与方只能评价一次；只有 `DONE` 的流转可评价；评价后对方信用分按规则变更。 | review、trade_flow、credit_log | Service 校验流转状态与 reviewer_id 是否参与方；review 表 UNIQUE(flow_id, reviewer_id | BR-008、DUP-003
+    BR-09 | 收藏唯一（user_id + item_id），重复收藏视为取消收藏（toggle 语义）。 | favorite、item | FavoriteService.toggle 先查后删或插；UNIQUE(user_id, item_id) 兜底；favorite_cou | DUP-003（并发冲突）
+    BR-10 | 管理员可下架任何 `ON_SALE`/`PENDING` 物品（记 `audit_remark`）与冻结用户；被下架物品的进行中流转自动取消 | item、user、trade_flow、trade_message、operation_log | AdminService 执行下架/冻结后，在同一事务内取消进行中流转、写 cancel_reason、向双方追加系统消息、写日志 | BR-010、PERM-001
+    BR-11 | 所有发布/修改/审核/流转/登录操作写 `operation_log`，日志仅追加不修改。 | operation_log | 由 OperationLogListener 观察者统一写入（解耦业务代码）；日志表无 UPDATE/DELETE 接口 | DB-001（写入失败时）
+    BR-12 | 图片仅允许 jpg/png，单张 ≤ 2MB，最多 5 张，重命名存 `data/images/`，禁止存绝对路径。 | item_image | 发布前校验扩展名、大小与张数；上传后按 `itemId_序号_时间戳.ext` 重命名，库中只存相对路径 | BR-012
+-- D1 table 55 rows 24
+    code | 异常类 | 触发场景 | 界面提示文案（示例） | 关联 BR / FR
+    VAL-001 | ValidationException | 字段为空、长度或格式不合法（用户名、标题、描述、学号、备注等） | 「输入内容不符合要求，请检查后重试（VAL-001）」 | BR-01、FR-01、FR-05
+    VAL-002 | ValidationException | 口令强度不足（长度、字符类型）或两次输入不一致 | 「密码需 8–20 位且同时包含字母与数字（VAL-002）」 | BR-01、FR-01、FR-03
+    VAL-003 | ValidationException | 修改密码时原口令校验失败 | 「原密码不正确，请重新输入（VAL-003）」 | FR-03
+    VAL-004 | ValidationException | 流转方式与价格不匹配（FREE 必须 0） | 「赠送物品的价格必须为 0（VAL-004）」 | FR-05
+    VAL-005 | ValidationException | 价格区间非法（min > max、负数、超出上限） | 「价格区间不正确，请检查起始与结束价格（VAL-005）」 | FR-08
+    VAL-006 | ValidationException | 消息内容为空或超过 200 字 | 「消息不能为空且不超过 200 字（VAL-006）」 | FR-10
+    VAL-007 | ValidationException | 统计时间区间非法（from 晚于 to） | 「开始时间不能晚于结束时间（VAL-007）」 | FR-14
+    VAL-008 | ValidationException | 新口令与原口令相同 | 「新密码不能与原密码相同（VAL-008）」 | FR-03
+    VAL-009 | ValidationException | 评分超出 1–5 范围 | 「评分只能为 1–5 星（VAL-009）」 | FR-12
+    DUP-001 | DuplicateEntityException | 注册时用户名已存在 | 「用户名已存在，请更换后重试（DUP-001）」 | BR-01、FR-01
+    DUP-002 | DuplicateEntityException | 注册时学号已存在 | 「该学号已注册，请直接登录（DUP-002）」 | BR-01、FR-01
+    DUP-003 | DuplicateEntityException | 同一流转重复评价、重复收藏并发冲突 | 「你已评价过该流转，不能重复评价（DUP-003）」 | BR-08、BR-09
+    DUP-004 | DuplicateEntityException | 同一父级下分类名称重复 | 「该分类名称已存在（DUP-004）」 | FR-17
+    NF-001 | EntityNotFoundException | 按 id 查询的用户、物品、流转、分类不存在 | 「目标数据不存在或已被删除，请刷新后重试（NF-001）」 | FR-06、FR-16
+    NF-002 | EntityNotFoundException | 所选分类不存在或已禁用 | 「所选分类不可用，请重新选择（NF-002）」 | FR-05
+    AUTH-001 | AuthenticationException | 用户名不存在或口令错误 | 「用户名或密码错误，请重新输入（AUTH-001）」 | BR-03、FR-02
+    LOCK-001 | AccountLockedException | 账号处于锁定期间（含正确口令） | 「账号已锁定，请 N 分钟后再试（LOCK-001）」 | BR-03、FR-02
+    PERM-001 | PermissionDeniedException | 角色不具备该操作权限（如学生调用管理接口） | 「权限不足，无法执行该操作（PERM-001）」 | FR-04、FR-16
+    PERM-002 | PermissionDeniedException | 操作非本人资源（如修改他人发布物品） | 「只能操作自己发布的物品（PERM-002）」 | FR-04、FR-06、BR-06
+    BR-0xx | BusinessRuleException | 违反业务规则 BR-01…BR-12，携带具体 BR 编号 | 「违反业务规则：{BR 规则摘要}（BR-0xx）」 | 第 7.2 节表 7-1
+    DB-001 | DataAccessException | 数据库连接失败、SQL 执行失败、约束冲突（非业务类） | 「数据保存失败，请稍后重试（DB-001）」 | NFR-04
+    TX-001 | TransactionException | 事务提交或回滚失败（跨表写操作） | 「操作未完成，数据已回滚，请重试（TX-001）」 | BR-07、FR-12
+    IO-001 | IOException（转换为 AppException） | CSV 导出目标不可写、磁盘满、文件被占用 | 「导出失败，请检查目标目录是否可写（IO-001）」 | FR-15
+-- D1 table 59 rows 9
+    基线项 | 数量 / 状态 | 说明
+    功能需求 FR | 17 条（P0 11 条、P1 6 条、P2 0 条） | 3.1–3.3 节，含验收标准与关联表/规则
+    非功能需求 NFR | 10 条 | 4.2–4.3 节，含度量指标与验证方式
+    用例 UC | 8 个 | 5.3 节，含主流程、异常流与后置条件
+    业务规则 BR | 12 条（逐字引用） | 7.1 节，含违反行为与错误码
+    错误码 | 23 项 | 7.2 节，含异常类、场景与提示文案
+    角色权限矩阵 | 17 × 3 | 6.1 节，含 5 个条件允许项
+    数据表 | 11 张 | 8.2 节反向追踪确认均有需求支撑
+    基线状态 | 已冻结（V1.0） | 评审通过后不得在迭代二擅自增删需求
+-- D1 table 60 rows 8
+    序号 | 待确认内容 | 位置 | 建议决策 | 负责人 / 期限
+    1 | 教师角色是否正式纳入（题目书仅定义学生与管理员） | 2.2 节、6.1 节 | 纳入，TEACHER 为保留枚举值，不新增业务流程 | 成员2 / D7
+    2 | 明确不做的事（支付、联网、推送、推荐 v1 等） | 1.3.2 节 | 按表中结论执行，变更须走 9.3 节流程 | 全员 / D5
+    3 | 管理员是否参与个人物品流转 | 6.1 节 | 不参与（矩阵中发布、收藏、沟通、评价均为 ✖），避免自审冲突 | 全员 / D5
+    4 | 学生 / 教师本人维度统计是否 v1 实现 | FR-14、6.1 节条件 C5 | 按 P1 处理，迭代三实现；未实现时矩阵按 ✖ 执行 | 成员3 / 迭代三
+    5 | 信用分等级标签分档（优秀/良好/一般/受限） | FR-13 | 按 120/100/80 分档，仅影响展示不参与判定 | 成员2 / D7
+    6 | 具体错误码编号（VAL-001 等） | 7.2 节 | 按本表固化，编码与测试统一引用，不再各自编号 | 全员 / 迭代二启动前
+    7 | 覆盖率目标（Service 层 ≥60%）与操作日志保留 24 个月 | NFR-07、NFR-08 | 采用本文件指标，作为迭代三、迭代四质量门禁 | 成员2 / 迭代三
+-- D1 table 61 rows 4
+    角色 | 姓名 | 职责范围 | 确认内容 | 签署日期
+    系统设计与数据层 | 成员1 | 需求规格、UML、表结构、持久化、异常与事务 | 需求完整性与可判定性、数据表与追踪矩阵一致性 | 2026-11-13
+    业务逻辑与测试 | 成员2 | Service 层编码、规则校验、JUnit、集成测试、走查 | 业务规则、错误码、异常流与验收标准可实现 | 2026-11-13
+    GUI / 复用 / 交付 | 成员3 | Swing 界面、设计模式落地、构建与部署、PPT 与视频 | 界面可承载的用例流程、可移植性与导出要求 | 2026-11-13
+============================== D2 tables containing VAL-/DUP-/NF-/PERM-/DB-/TX-
+-- D2 table 11 rows 6 codes: DB-101,DB-102,DB-103,DB-104
+-- D2 table 12 rows 10 codes: BR-04,DB-111,DB-112,DB-113,DB-114
+-- D2 table 13 rows 5 codes: DB-121,DB-122,DB-123
+-- D2 table 14 rows 10 codes: DB-131,DB-132,DB-133,DB-134,DB-135,DB-136
+-- D2 table 15 rows 4 codes: DB-141,DB-142,DB-143
+-- D2 table 16 rows 6 codes: BR-09,DB-151,DB-152,DB-153,DB-154,DB-155
+-- D2 table 17 rows 5 codes: DB-161,DB-162,DB-163,DB-164
+-- D2 table 18 rows 8 codes: BR-05,DB-171,DB-172,DB-173,DB-174,DB-175
+-- D2 table 19 rows 5 codes: BR-08,DB-181,DB-182,DB-183
+-- D2 table 20 rows 3 codes: BR-04,BR-07,DB-191,DB-192
+-- D2 table 21 rows 3 codes: BR-11,DB-201,DB-202
+-- D2 table 22 rows 5 codes: DB-211,DB-212
+-- D2 table 23 rows 9 codes: AUTH-001,AUTH-002,BR-01,BR-02,BR-03,BR-04,BR-10,DB-113,DUP-001,DUP-002,LOCK-001,NF-001,NF-002,PERM-001,TX-002,VAL-001,VAL-002
+-- D2 table 24 rows 7 codes: BR-04,BR-05,BR-10,BR-12,DB-133,NF-011,NF-012,PERM-011,PERM-012,PERM-013,TX-011,VAL-011
+-- D2 table 25 rows 3 codes: BR-09,DB-151,DB-152,DB-153,DB-154,NF-021
+-- D2 table 26 rows 6 codes: BR-05,BR-06,BR-07,DB-174,NF-022,NF-023,PERM-021,PERM-022,PERM-023,TX-001
+-- D2 table 27 rows 2 codes: BR-08,DUP-041,NF-031,TX-041
+-- D2 table 28 rows 4 codes: BR-031,DB-175
+-- D2 table 29 rows 4 codes: DB-202,DUP-051,NF-051,PERM-051
+-- D2 table 32 rows 4 codes: TX-001
+-- D2 table 34 rows 15 codes: AUTH-001,BR-01,BR-03,BR-04,BR-05,BR-06,BR-07,BR-08,BR-10,BR-12,DB-171,DUP-001,DUP-041,LOCK-001,NF-012,PERM-001,PERM-021,TX-001,VAL-001,VAL-011
+-- D2 table 38 rows 29 codes: BR-01,BR-03,BR-031,BR-04,BR-05,BR-06,BR-07,BR-08,BR-09,BR-10,BR-12,DUP-051,NF-001,NF-012,PERM-001,PERM-011,PERM-013,PERM-021,PERM-022,PERM-023,PERM-051
+-- D2 table 39 rows 29 codes: BR-01,BR-03,BR-04,BR-05,BR-07,BR-08,BR-12,DUP-001,DUP-041,DUP-051,PERM-001,PERM-022,VAL-001
+============================== D2 table 11 raw
+    方法 | 可能抛出的异常 | 触发场景
+    findById(ID id) | DataAccessException（DB-101） | 连接获取失败、SQL 语法/列名错误、结果集映射失败
+    findAll() | DataAccessException（DB-101） | 全表查询失败；数据量过大时由上层控制，不在 DAO 分页
+    insert(T entity) | DataAccessException（DB-102） | 主键冲突、NOT NULL/CHECK/UNIQUE 约束违反、磁盘只读
+    update(T entity) | DataAccessException（DB-103） | 主键不存在时返回 0 行（不抛异常），约束违反抛异常
+    deleteById(ID id) | DataAccessException（DB-104） | 被外键 ON DELETE RESTRICT 引用时删除失败
+== D2 table 6 hits PageResult
+     edu.campus.recycle.dto | 跨层传输对象：查询条件、分页结果、统计行、聚合视图 | entity（可引用） | ItemQuery、PageResult<T>、StatisticsDTO、UserCreditDTO、LoginResult、TradeDetailDTO
+== D2 table 8 hits updateCredit
+     M5 评价信用模块 | 流转完成后双方互评、评价唯一性、信用分增减与 credit_log 快照 | ReviewService（1 个方法）、UserService.updateCredit、ReviewDao、CreditLogDao | M4 流转、M8 | 成员2（业务）/ 成员3（UI）
+== D2 table 9 hits updateCredit
+     M2 物品 | M1 用户 | UserService.findById(userId)；UserService.updateCredit(userId, delta, flowId, reason) | 发布前校验信用分 ≥60（BR-04）
+     M4 流转 | M1 用户 | UserService.updateCredit(userId, delta, flowId, reason) | 成交后双方加分，写 credit_log 快照
+== D2 table 10 hits updateCredit
+     评价与信用分 | FR-05、BR-08 | M5 评价信用 | ReviewServiceImpl、UserServiceImpl.updateCredit
+== D2 table 12 hits updateCredit
+     updateCreditScore(int userId, int newScore) | DataAccessException（DB-114） | 信用分更新失败；0–150 区间由 CHECK 与 BR-04 双重把关
+== D2 table 17 hits ≤300
+     insert(TradeMessage m) | DataAccessException（DB-161） | 发送沟通消息失败（内容 ≤300 字由业务层校验）
+== D2 table 17 hits 300 字
+     insert(TradeMessage m) | DataAccessException（DB-161） | 发送沟通消息失败（内容 ≤300 字由业务层校验）
+== D2 table 23 hits updateCredit
+     updateCredit(int userId, int delta, Integer flowId, String reason) | BusinessRuleException（BR-04：结果分数越界 [0,150]）
+EntityNotFoundException（NF-001） | 信用分增减并写 credit_log 快照，供流转/评价复用
+== D2 table 24 hits PageResult
+     search(ItemQuery query) | DataAccessException（DB-133：动态 SQL 或排序策略失败） | 检索筛选 + 排序 + 分页，返回 PageResult<Item>
+== D2 table 27 hits ≥4
+     review(int flowId, int reviewerId, int score, String content) | BusinessRuleException（BR-08：流转未 DONE / 自评 / 分数不在 1–5）
+DuplicateEntityException（DUP-041：同一流转同一人重复评价）
+EntityNotFoundException（NF-031：流转不存在）
+TransactionExcepti
+== D2 table 37 hits updateCredit
+     UserServiceImpl | UserService | 8 | register 需事务（user + operation_log）；updateCredit 需事务（credit_score + credit_log）；其余单表操作免事务 | UserDao、CreditLogDao、OperationLogDao、SystemConfigDao
+== D2 table 38 hits PageResult
+     ItemService.search | 把 ItemQuery 交给排序策略生成 ORDER BY；分页参数纠正；委托 ItemDao.search + countSearch 组装 PageResult | 否 | DataAccessException
+== D2 table 38 hits updateCredit
+     UserService.updateCredit | delta 加到当前分数后必须落在 [0,150]（BR-04），超出则截断或抛 BR 异常（约定：抛异常由调用方决定）；更新 credit_score；插入 credit_log（含 delta、score_after 快照、flow_id、reason） | 是（score + log） | BusinessRuleException
+== D2 table 38 hits ≥4
+     ReviewService.review | 流转必须 DONE（BR-08）；reviewer 必须是该流转参与方且不能自评；score ∈ [1,5]；同一 (flow_id, reviewer_id) 唯一；事务内插入 review → 按分档更新对方信用分（≥4：+credit.trade_bonus；≤2：+credit.bad_review_penalty，负数）→ 写 credit_log 快照 → 写 operation
+== D2 table 42 hits PageResult
+     第 4 节 6 个 DTO | 页 1：dto 区 ItemQuery/PageResult/StatisticsDTO/UserCreditDTO/LoginResult/TradeDetailDTO | 依赖（DTO→entity）、聚合（PageResult◇—records、TradeDetailDTO◇—TradeFlow） | 泛型标注 <T>；PageResult 含 records/total/pageNo/pageSi
+== D2 table 43 hits updateCredit
+     场景 4 流转成交 | 8.3 TradeService.confirm（跨表事务）、BR-05～BR-07 | TradeServiceImpl.confirm(flowId, operatorId)、DbUtil.beginTransaction（BEGIN IMMEDIATE）、ItemDao.updateStatus、TradeFlowDao.updateStatus、UserDao.updateCreditScore、Cred
+     场景 5 评价与信用分 | 5.4 ReviewService、8.3 review、BR-08、7.3 CarbonFactorStrategy 无关 | ReviewServiceImpl.review、ReviewDao.existsByFlowAndReviewer/insert、TradeFlowDao.findById、UserDao.updateCreditScore、CreditLogDao.insert（score_a
+== D2 table 43 hits beginTransaction
+     场景 4 流转成交 | 8.3 TradeService.confirm（跨表事务）、BR-05～BR-07 | TradeServiceImpl.confirm(flowId, operatorId)、DbUtil.beginTransaction（BEGIN IMMEDIATE）、ItemDao.updateStatus、TradeFlowDao.updateStatus、UserDao.updateCreditScore、Cred
+== D2 table 44 hits ≤300
+     TradeMessage | trade_message | TradeMessageDao | 5.3.6 / 表 5-7 | is_read 0/1；content ≤300 字
+== D2 table 44 hits 300 字
+     TradeMessage | trade_message | TradeMessageDao | 5.3.6 / 表 5-7 | is_read 0/1；content ≤300 字
+D1 count rows 3
+D1 count records 0
+D1 count sortType 1
+D1 count sortBy 0
+D1 count updateCredit 7
+D1 count BR-005 7
+D1 count BR-004 3
+D1 count 300 字 0
+D1 count 200 字 11
+D1 count FR-03 21
+D1 count 成员1 12
+D6 count D2 6
+D6 count D3 6
+D6 count D4 5
+D6 count SecurityUtil 4
+D6 count PasswordUtil 0
+D6 count MainApp 0
+D6 count edu.campus.recycle.App 1
+D6 count service.impl 0
+============================== D6 tables 2,3,4,8 (分工/交付物)
+-- D6 table 2
+    成员 | 姓名 | 学号 | 角色定位 | 主要职责 | 迭代一主要产出
+    成员1 | 成员1（待补） | （待补） | 系统设计与数据层（组长） | 需求梳理与需求规格主笔、UML 类图与时序图、表结构与 JDBC 持久化、异常与事务、接口基线维护 | D1 需求规格、D2 类图、D3 时序图、D5 数据库设计、契约维护
+    成员2 | 成员2（待补） | （待补） | 业务逻辑与测试 | Service 层编码与业务规则校验、防御性编程、JUnit 单元测试与集成测试、代码走查、坏味道识别与初重构 | Service 接口确认与实现骨架、BR 校验清单、测试计划与 JUnit 骨架
+    成员3 | 成员3（待补） | （待补） | GUI / 复用 / 交付 | Swing 界面与事件驱动、设计模式落地、Maven 构建与可执行 Jar、部署说明、PPT 与演示视频、版本管理 | 界面骨架与窗体清单、构建打包方案、D7 部署说明初稿、仓库与分支建立
+-- D6 table 3
+    成员 | 模块 | 具体任务 | 产出物 | 截止时间
+    成员1 | 需求与设计 | 需求梳理、FR/NFR/UC 编写、角色权限矩阵与追踪矩阵 | docs/01-需求规格说明书.docx | 2026-11-06（v0.4）／11-13（V1.0）
+    成员1 | UML 建模 | 类图（entity/dto/dao/service 分层）、核心时序图 5 张 | docs/02-*.docx、design/03-*.drawio、design/04-*.drawio | 2026-11-10
+    成员1 | 数据层 | 11 张表 DDL、索引与约束（含部分唯一索引）、seed 数据与配置项 | db/schema.sql、db/seed-data.sql、docs/05-*.docx | 2026-11-12
+    成员1 | 数据层 | entity、dao 接口、dao.impl、AbstractJdbcDao 模板方法、DbUtil/ConfigMan | code/edu/campus/recycle/{entity,dao,dao/impl,util} | 2026-11-13
+    成员1 | 基础设施 | 异常体系（AppException + 9 子类）、SecurityUtil（PBKDF2） | code/edu/campus/recycle/{exception,util} | 2026-11-12
+    成员1 | 契约与文档 | 共享契约冻结与维护；D6 分工与迭代计划；D7 数据部分 | _共享契约-实体与接口基线.md、docs/06-*.docx | 2026-11-13
+    成员2 | 需求复核 | 业务规则 BR-01…BR-12 可判定化、错误码与提示文案核对 | D1 第 7 章核对意见、错误码清单确认 | 2026-11-06
+    成员2 | 用例与测试设计 | UC 异常流细化（失败锁定/重复收藏/已售/事务回滚）、测试计划与 JUnit 骨架 | D1 第 5 章核对意见、test-plan（JUnit 骨架目录） | 2026-11-09
+    成员2 | Service 设计 | Service 接口签名确认、DTO 字段核对、方法异常声明 | 契约 §6 修订意见、Service 接口清单确认 | 2026-11-12
+    成员2 | 业务规则落点 | BR 三层校验落点表核对、防御性编程规范 | D1 第 7.3 节核对意见、编码规范补充 | 2026-11-12
+    成员2 | 走查 | D1/D5 与契约的一致性交叉走查（编号、表名、字段、方法签名） | 走查记录（表 5-3 模板） | 2026-11-13
+    成员3 | 界面设计 | 窗体清单与导航结构、事件流与 SwingWorker 使用规则 | 界面骨架说明（并回写 D4 设计说明） | 2026-11-10
+    成员3 | 复用设计 | AbstractCsvExporter 模板方法、ItemSortStrategy 策略、ItemEventBus 观察 | 复用构件设计说明（D4 增补） | 2026-11-12
+    成员3 | 构建与交付 | Maven 坐标与目录骨架、可执行 Jar 与 start.bat 方案、D7 部署说明初稿 | code/pom.xml（方案）、start.bat（方案）、docs/07-*.docx 初稿 | 2026-11-13
+    成员3 | 仓库与演示 | Git 仓库初始化、分支与 tag 约定、PPT 与演示视频脚本大纲 | .gitignore、分支说明、PPT 大纲 | 2026-11-14
+-- D6 table 4
+    日期 | 阶段 | 具体任务 | 责任人 | 产出物 | 里程碑
+    D1
+11-02（周一） | 需求梳理 | 解读题目书与评分依据，确定系统范围与「明确不做」清单，确认技术栈与硬约束（无 Spring/ORM） | 全员 | 需求范围草稿、不做清单 | 
+    D2
+11-03（周二） | 需求梳理 | 目标用户与角色画像、术语表统一、FR 清单分组与优先级初定（P0/P1） | 成员1 主笔
+成员2 复核 | D1 第 1–2 章草稿 | 
+    D3
+11-04（周三） | 需求细化 | 逐条细化 FR-01…FR-17（输入输出、验收标准）、NFR-01…NFR-10 指标量化 | 成员1
+成员2 补规则 | D1 第 3–4 章草稿 | 
+    D4
+11-05（周四） | 需求细化 | 用例 UC-01…UC-08 与异常流、角色权限矩阵、错误码清单 | 成员2 主笔
+成员1 复核 | D1 第 5–7 章草稿 | 
+    D5
+11-06（周五） | 需求评审 | 组内逐条评审 FR 验收标准与 BR，修订并冻结需求基线 v0.4，输出评审记录 | 全员 | 评审记录、D1 v0.4 | ★M1 需求评审通过
+    D6
+11-07（周六） | UML 建模 | 包结构与分层依赖、类图（entity/dto/dao/service 四层）、时序图清单 | 成员1 | D2 类图草稿、D3 时序图清单 | 
+    D7
+11-08（周日） | UML 建模 | 核心时序图 5 张：登录、发布、流转成交（跨表事务）、评价与信用分、统计导出 | 成员1
+成员2 校验业务分支 | D3 时序图 v0.5 | 
+    D8
+11-09（周一） | 设计模式与接口 | 5 处设计模式落点（单例/工厂/策略/观察者/模板方法）、异常体系图、Service/DAO 接口清单初稿 | 成员1
+成员3 评审界面侧落点 | D4 设计说明草稿、接口清单 | 
+    D9
+11-10（周二） | 建模评审 | 类图、时序图交叉评审并定稿；确认接口清单与 DTO 字段 | 全员 | D2/D3 定稿、接口清单定稿 | ★M2 建模完成
+    D10
+11-11（周三） | 数据库设计 | 11 张表 DDL、字段类型与约束、索引（含 uq_flow_item_active 部分唯一索引）、外键建表顺序 | 成员1 | db/schema.sql、D5 草稿 | 
+    D11
+11-12（周四） | 数据库评审 | DDL 走查（命名、约束完备性、字段是否覆盖 FR）、seed 数据与 system_config 参数值 | 成员2 复核业务字段
+成员3 复核界面字段 | D5 v0.6、db/seed-data.sql | ★M3 数据库评审
+    D12
+11-13（周五） | 接口对齐 | Service/DAO 方法签名冻结、DTO 与异常 code 约定、写域划分；D1 追踪矩阵定稿 | 全员 | _共享契约 v1.0、D1 V1.0 | 
+    D13
+11-14（周六） | 交付准备 | 文档自查（表号/编号/字体/页码/文末注记）、目录与 Maven 骨架、交付清单核对 | 成员1
+成员3 | 文档自检记录、code 目录骨架 | 
+    D14
+11-15（周日） | 交付与复盘 | 迭代一交付包打包提交、组内复盘（进度偏差/风险/迭代二排期确认） | 全员 | 迭代一交付包、复盘记录 | ★M4 迭代一交付
+-- D6 table 8
+    序号 | 文件 / 目录 | 内容说明 | 提供者 | 接收者
+    1 | _共享契约-实体与接口基线.md | 包结构、命名规范、11 张表字段、DAO/Service 签名、异常与 BR | 成员1 | 成员2、成员3
+    2 | docs/01-需求规格说明书.docx | FR/NFR/UC/BR、权限矩阵、追踪矩阵（编码与测试依据） | 成员1 | 成员2、成员3
+    3 | docs/02-*.docx、design/03-*.drawio、design/04-*.drawio | 类图、时序图、设计模式与架构说明 | 成员1 | 成员2、成员3
+    4 | docs/05-*.docx、db/schema.sql、db/seed-data.sql | 数据库设计文档、可执行建库脚本、演示数据与 system_config 参数 | 成员1 | 成员2、成员3
+    5 | code/edu/campus/recycle/{entity,dto,dao,exception,util | 实体、DTO、DAO 接口与实现、异常体系、DbUtil/ConfigManager/SecurityUtil | 成员1 | 成员2、成员3
+    6 | code/edu/campus/recycle/{service,service/impl} | Service 接口（空实现待填）与实现骨架 | 成员1（接口）
+成员2（实现） | 成员2、成员3
+    7 | db/migration/ | 结构升级脚本（按 schema.version 递增，幂等） | 成员1 | 成员2
+    8 | docs/07-*.docx、start.bat、pom.xml | 部署说明、启动脚本与构建配置 | 成员3 | 全员
+schema count DEFAULT 'ON_SALE' 1
+schema count DRAFT 1
+schema count 300 1
+schema count content 2
+schema count carbon.factor 0
+schema count trade_type 2
+schema count CHECK (price 1
+  publish: ItemServiceImpl.java:106: String status = item.getStatus() == null || item.getStatus().trim().isEmpty()
+  publish: ItemServiceImpl.java:107: ? ItemStatus.ON_SALE.getCode() : item.getStatus();
+  publish: ItemServiceImpl.java:109: item.setStatus(status);
+  publish: ItemServiceImpl.java:112: item.setPublishedAt(ItemStatus.ON_SALE.getCode().equals(status) ? now : null);
+  publish: ItemServiceImpl.java:210: if (!ItemStatus.PENDING.getCode().equals(item.getStatus())
+  publish: ItemServiceImpl.java:217: item.setStatus(ItemStatus.ON_SALE.getCode());
+  confirm/cancel: TradeServiceImpl.java:48: public TradeFlow apply(int itemId, int buyerId, String remark)
+  confirm/cancel: TradeServiceImpl.java:52: if (Objects.equals(item.getOwnerId(), buyerId)) {
+  confirm/cancel: TradeServiceImpl.java:58: User buyer = userDao.findById(buyerId)
+  confirm/cancel: TradeServiceImpl.java:59: .orElseThrow(() -> EntityNotFoundException.of("申请用户不存在：id=" + buyerId));
+  confirm/cancel: TradeServiceImpl.java:70: flow.setBuyerId(buyerId);
+  confirm/cancel: TradeServiceImpl.java:80: ItemEvent.of(ItemEvent.Type.FLOW_APPLIED, itemId, flow.getId(), buyerId, "发起流转申请"));
+  confirm/cancel: TradeServiceImpl.java:136: boolean participant = Objects.equals(flow.getSellerId(), operatorId)
+  confirm/cancel: TradeServiceImpl.java:138: if (!participant) {
+  enum: ItemStatus.java:4: * 物品状态，对应 {@code item.status} 的 CHECK 取值（7 态）。
+  enum: ItemStatus.java:6: * <p>枚举 {@code code()} 与数据库 TEXT 列取值逐字符一致，数据库写入统一使用
+  enum: ItemStatus.java:11: DRAFT("草稿"),
+  enum: ItemStatus.java:12: PENDING("待审核"),
+  enum: ItemStatus.java:13: ON_SALE("在售"),
+  enum: ItemStatus.java:14: LOCKED("交易中"),
+  enum: ItemStatus.java:15: SOLD("已成交"),
+  enum: ItemStatus.java:16: OFF_SHELF("已下架"),
+  enum: ItemStatus.java:17: REJECTED("审核驳回");
+  enum: ItemStatus.java:38: * @param code 数据库 TEXT 列取值
+  itemquery: ItemQuery.java:26: private String sortBy;
+  itemquery: ItemQuery.java:45: return sortBy == null || sortBy.isBlank() ? "LATEST" : sortBy;
+  itemquery: ItemQuery.java:105: return sortBy;
+  itemquery: ItemQuery.java:108: public void setSortBy(String sortBy) {
+  itemquery: ItemQuery.java:109: this.sortBy = sortBy;
+  itemquery: ItemQuery.java:133: + ", ownerId=" + ownerId + ", sortBy=" + sortBy
+  tradesvc: TradeService.java:28: List<TradeFlow> history(int userId, String status, int pageNo, int pageSize);
+  usersvc: UserService.java:63: void updateCredit(int userId, int delta, Integer flowId, String reason) throws BusinessRuleException;

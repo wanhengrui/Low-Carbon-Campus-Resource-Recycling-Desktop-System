@@ -1,0 +1,280 @@
+000 p1_User :: User
+001 p1_User_a :: - id: Integer<br>- username: String<br>- passwordHash: String<br>- salt: String<br>- realName: String<br>- studentNo: String<br>- role: Role<br>- college: String<br>- contact: String<br>- creditScore: Integer<br>- status: UserStatus<br>- failCount: Integer<br>- lockedUntil: LocalDateTime<br>- create
+002 p1_User_m :: + getters/setters（16 组）<br>+ toString(): String
+003 p1_User_t :: 
+004 p1_Category :: Category
+005 p1_Category_a :: - id: Integer<br>- name: String<br>- parentId: Integer<br>- sortOrder: Integer<br>- enabled: boolean<br>- createdAt: LocalDateTime
+006 p1_Category_m :: + getters/setters（6 组）<br>+ toString(): String
+007 p1_Category_t :: 
+008 p1_Item :: Item
+009 p1_Item_a :: - id: Integer<br>- ownerId: Integer<br>- categoryId: Integer<br>- title: String<br>- description: String<br>- tradeType: TradeType<br>- price: BigDecimal<br>- originalPrice: BigDecimal<br>- conditionLevel: Integer<br>- tags: String<br>- status: ItemStatus<br>- viewCount: Integer<br>- favoriteCount: 
+010 p1_Item_m :: + getters/setters（17 组）<br>+ toString(): String
+011 p1_Item_t :: 
+012 p1_ItemImage :: ItemImage
+013 p1_ItemImage_a :: - id: Integer<br>- itemId: Integer<br>- filePath: String<br>- sortOrder: Integer<br>- createdAt: LocalDateTime
+014 p1_ItemImage_m :: + getters/setters（5 组）
+015 p1_ItemImage_t :: 
+016 p1_Favorite :: Favorite
+017 p1_Favorite_a :: - id: Integer<br>- userId: Integer<br>- itemId: Integer<br>- createdAt: LocalDateTime
+018 p1_Favorite_m :: + getters/setters（4 组）
+019 p1_Favorite_t :: 
+020 p1_TradeMessage :: TradeMessage
+021 p1_TradeMessage_a :: - id: Integer<br>- itemId: Integer<br>- fromUserId: Integer<br>- toUserId: Integer<br>- content: String<br>- isRead: boolean<br>- createdAt: LocalDateTime
+022 p1_TradeMessage_m :: + getters/setters（7 组）
+023 p1_TradeMessage_t :: 
+024 p1_TradeFlow :: TradeFlow
+025 p1_TradeFlow_a :: - id: Integer<br>- itemId: Integer<br>- sellerId: Integer<br>- buyerId: Integer<br>- flowType: TradeType<br>- amount: BigDecimal<br>- status: FlowStatus<br>- applyRemark: String<br>- cancelReason: String<br>- createdAt: LocalDateTime<br>- finishedAt: LocalDateTime
+026 p1_TradeFlow_m :: + getters/setters（11 组）<br>+ toString(): String
+027 p1_TradeFlow_t :: 
+028 p1_Review :: Review
+029 p1_Review_a :: - id: Integer<br>- flowId: Integer<br>- reviewerId: Integer<br>- revieweeId: Integer<br>- score: Integer<br>- content: String<br>- createdAt: LocalDateTime
+030 p1_Review_m :: + getters/setters（7 组）
+031 p1_Review_t :: 
+032 p1_CreditLog :: CreditLog
+033 p1_CreditLog_a :: - id: Integer<br>- userId: Integer<br>- flowId: Integer<br>- delta: Integer<br>- scoreAfter: Integer<br>- reason: String<br>- createdAt: LocalDateTime
+034 p1_CreditLog_m :: + getters/setters（7 组）
+035 p1_CreditLog_t :: 
+036 p1_OperationLog :: OperationLog
+037 p1_OperationLog_a :: - id: Integer<br>- operatorId: Integer<br>- operation: String<br>- targetType: String<br>- targetId: Integer<br>- detail: String<br>- ip: String<br>- createdAt: LocalDateTime
+038 p1_OperationLog_m :: + getters/setters（8 组）
+039 p1_OperationLog_t :: 
+040 p1_SystemConfig :: SystemConfig
+041 p1_SystemConfig_a :: - id: Integer<br>- configKey: String<br>- configValue: String<br>- description: String<br>- updatedAt: LocalDateTime
+042 p1_SystemConfig_m :: + getters/setters（5 组）
+043 p1_SystemConfig_t :: 
+044 p1_Role :: «enumeration» Role
+045 p1_Role_a :: STUDENT<br>TEACHER<br>ADMIN
+046 p1_Role_m :: + values(): Role[]<br>+ valueOf(String): Role
+047 p1_Role_t :: 
+048 p1_UserStatus :: «enumeration» UserStatus
+049 p1_UserStatus_a :: ACTIVE<br>FROZEN<br>CANCELLED
+050 p1_UserStatus_m :: + values(): UserStatus[]<br>+ valueOf(String): UserStatus
+051 p1_UserStatus_t :: 
+052 p1_TradeType :: «enumeration» TradeType
+053 p1_TradeType_a :: SELL<br>EXCHANGE<br>FREE
+054 p1_TradeType_m :: + values(): TradeType[]<br>+ valueOf(String): TradeType
+055 p1_TradeType_t :: 
+056 p1_ItemStatus :: «enumeration» ItemStatus
+057 p1_ItemStatus_a :: DRAFT<br>PENDING<br>ON_SALE<br>LOCKED<br>SOLD<br>OFF_SHELF<br>REJECTED
+058 p1_ItemStatus_m :: + isTradable(): boolean<br>+ isFinal(): boolean
+059 p1_ItemStatus_t :: 
+060 p1_FlowStatus :: «enumeration» FlowStatus
+061 p1_FlowStatus_a :: APPLYING<br>AGREED<br>DONE<br>CANCELLED
+062 p1_FlowStatus_m :: + isActive(): boolean<br>+ isFinal(): boolean
+063 p1_FlowStatus_t :: 
+064 p1_ItemQuery :: ItemQuery
+065 p1_ItemQuery_a :: - keyword: String<br>- categoryId: Integer<br>- minPrice: BigDecimal<br>- maxPrice: BigDecimal<br>- tradeType: TradeType<br>- status: ItemStatus<br>- ownerId: Integer<br>- sortBy: String<br>- pageNo: int<br>- pageSize: int
+066 p1_ItemQuery_m :: + getters/setters（10 组）<br>+ validate(): void  【建议补充】
+067 p1_ItemQuery_t :: 
+068 p1_PageResultT :: PageResult&lt;T&gt;
+069 p1_PageResultT_a :: - records: List&lt;T&gt;<br>- total: long<br>- pageNo: int<br>- pageSize: int<br>- totalPages: int
+070 p1_PageResultT_m :: + getters/setters（5 组）<br>+ empty(): PageResult&lt;T&gt;
+071 p1_PageResultT_t :: 
+072 p1_StatisticsDTO :: StatisticsDTO
+073 p1_StatisticsDTO_a :: - categoryName: String<br>- flowCount: int<br>- totalAmount: BigDecimal<br>- carbonReduction: double
+074 p1_StatisticsDTO_m :: + getters/setters（4 组）
+075 p1_StatisticsDTO_t :: 
+076 p1_UserCreditDTO :: UserCreditDTO
+077 p1_UserCreditDTO_a :: - userId: Integer<br>- username: String<br>- creditScore: Integer<br>- logs: List&lt;CreditLog&gt;  【建议补充】
+078 p1_UserCreditDTO_m :: 【建议补充】契约未细化字段
+079 p1_UserCreditDTO_t :: 
+080 p1_LoginResult :: LoginResult
+081 p1_LoginResult_a :: - user: User<br>- role: Role<br>- creditScore: int<br>- message: String  【建议补充】
+082 p1_LoginResult_m :: 【建议补充】契约未细化字段
+083 p1_LoginResult_t :: 
+084 p1_TradeDetailDTO :: TradeDetailDTO
+085 p1_TradeDetailDTO_a :: - flow: TradeFlow<br>- item: Item<br>- seller: User<br>- buyer: User<br>- messages: List&lt;TradeMessage&gt;  【建议补充】
+086 p1_TradeDetailDTO_m :: 【建议补充】契约未细化字段
+087 p1_TradeDetailDTO_t :: 
+088 p1_AppException :: AppException
+089 p1_AppException_a :: - code: String  {readOnly}<br>- userMessage: String  {readOnly}
+090 p1_AppException_m :: + AppException.of(code, userMessage, cause): AppException<br>+ getCode(): String<br>+ getUserMessage(): String
+091 p1_AppException_t :: 
+092 p1_ValidationException :: ValidationException
+093 p1_ValidationException_a :: - code: String  = VAL-xxx
+094 p1_ValidationException_m :: + ValidationException(String userMessage, String code)<br>+ getCode(): String
+095 p1_ValidationException_t :: 
+096 p1_DuplicateEntityException :: DuplicateEntityException
+097 p1_DuplicateEntityException_a :: - code: String  = DUP-xxx
+098 p1_DuplicateEntityException_m :: + DuplicateEntityException(String userMessage, String code)<br>+ getCode(): String
+099 p1_DuplicateEntityException_t :: 
+100 p1_EntityNotFoundException :: EntityNotFoundException
+101 p1_EntityNotFoundException_a :: - code: String  = NF-xxx
+102 p1_EntityNotFoundException_m :: + EntityNotFoundException(String userMessage, String code)<br>+ getCode(): String
+103 p1_EntityNotFoundException_t :: 
+104 p1_AuthenticationException :: AuthenticationException
+105 p1_AuthenticationException_a :: - code: String  = AUTH-xxx
+106 p1_AuthenticationException_m :: + AuthenticationException(String userMessage, String code)<br>+ getCode(): String
+107 p1_AuthenticationException_t :: 
+108 p1_AccountLockedException :: AccountLockedException
+109 p1_AccountLockedException_a :: - code: String  = LOCK-xxx
+110 p1_AccountLockedException_m :: + AccountLockedException(String userMessage, String code)<br>+ getCode(): String
+111 p1_AccountLockedException_t :: 
+112 p1_PermissionDeniedException :: PermissionDeniedException
+113 p1_PermissionDeniedException_a :: - code: String  = PERM-xxx
+114 p1_PermissionDeniedException_m :: + PermissionDeniedException(String userMessage, String code)<br>+ getCode(): String
+115 p1_PermissionDeniedException_t :: 
+116 p1_BusinessRuleException :: BusinessRuleException
+117 p1_BusinessRuleException_a :: - code: String  = BR-xxx
+118 p1_BusinessRuleException_m :: + BusinessRuleException(String userMessage, String code)<br>+ getCode(): String
+119 p1_BusinessRuleException_t :: 
+120 p1_DataAccessException :: DataAccessException
+121 p1_DataAccessException_a :: - code: String  = DB-xxx
+122 p1_DataAccessException_m :: + DataAccessException(String userMessage, String code)<br>+ getCode(): String
+123 p1_DataAccessException_t :: 
+124 p1_TransactionException :: TransactionException
+125 p1_TransactionException_a :: - code: String  = TX-xxx
+126 p1_TransactionException_m :: + TransactionException(String userMessage, String code)<br>+ getCode(): String
+127 p1_TransactionException_t :: 
+128 p2_BaseDao :: «interface» BaseDao&lt;T, ID&gt;
+129 p2_BaseDao_a :: 
+130 p2_BaseDao_m :: + findById(ID id): Optional&lt;T&gt;<br>+ findAll(): List&lt;T&gt;<br>+ insert(T entity): int<br>+ update(T entity): int<br>+ deleteById(ID id): int
+131 p2_BaseDao_t :: 
+132 p2_UserDao :: «interface» UserDao
+133 p2_UserDao_a :: 
+134 p2_UserDao_m :: + findByUsername(String username): Optional&lt;User&gt;<br>+ existsByUsername(String u): boolean<br>+ existsByStudentNo(String no): boolean<br>+ findByCondition(String keyword, String role, int pageNo, int pageSize): List&lt;User&gt;<br>+ countByCondition(String keyword, String role): int<br>+ updat
+135 p2_UserDao_t :: 
+136 p2_CategoryDao :: «interface» CategoryDao
+137 p2_CategoryDao_a :: 
+138 p2_CategoryDao_m :: + findEnabled(): List&lt;Category&gt;<br>+ findByParentId(Integer parentId): List&lt;Category&gt;<br>+ existsByName(Integer parentId, String name): boolean<br>+ updateEnabled(int id, boolean enabled): int
+139 p2_CategoryDao_t :: 
+140 p2_ItemDao :: «interface» ItemDao
+141 p2_ItemDao_a :: 
+142 p2_ItemDao_m :: + insert(Item item): int  // 回填自增主键<br>+ findById(int id): Optional&lt;Item&gt;<br>+ search(ItemQuery q): List&lt;Item&gt;<br>+ countSearch(ItemQuery q): int<br>+ updateStatus(int itemId, String status, String remark): int<br>+ increaseViewCount(int itemId): int<br>+ increaseFavoriteCount(int itemId
+143 p2_ItemDao_t :: 
+144 p2_ItemImageDao :: «interface» ItemImageDao
+145 p2_ItemImageDao_a :: 
+146 p2_ItemImageDao_m :: + batchInsert(List&lt;ItemImage&gt; images): int<br>+ findByItemId(int itemId): List&lt;ItemImage&gt;<br>+ deleteByItemId(int itemId): int
+147 p2_ItemImageDao_t :: 
+148 p2_FavoriteDao :: «interface» FavoriteDao
+149 p2_FavoriteDao_a :: 
+150 p2_FavoriteDao_m :: + exists(int userId, int itemId): boolean<br>+ insert(Favorite f): int<br>+ delete(int userId, int itemId): int<br>+ findItemsByUserId(int userId): List&lt;Item&gt;<br>+ countByItemId(int itemId): int
+151 p2_FavoriteDao_t :: 
+152 p2_TradeMessageDao :: «interface» TradeMessageDao
+153 p2_TradeMessageDao_a :: 
+154 p2_TradeMessageDao_m :: + insert(TradeMessage m): int<br>+ findConversation(int userId, int otherUserId, int itemId): List&lt;TradeMessage&gt;<br>+ markRead(int toUserId, int itemId): int<br>+ countUnread(int userId): int
+155 p2_TradeMessageDao_t :: 
+156 p2_TradeFlowDao :: «interface» TradeFlowDao
+157 p2_TradeFlowDao_a :: 
+158 p2_TradeFlowDao_m :: + insert(TradeFlow f): int  // 回填主键<br>+ findActiveByItemId(int itemId): Optional&lt;TradeFlow&gt;<br>+ findById(int id): Optional&lt;TradeFlow&gt;<br>+ updateStatus(int flowId, String status, String cancelReason, LocalDateTime finishedAt): int<br>+ findByUserId(int userId, String status, int pageNo
+159 p2_TradeFlowDao_t :: 
+160 p2_ReviewDao :: «interface» ReviewDao
+161 p2_ReviewDao_a :: 
+162 p2_ReviewDao_m :: + insert(Review r): int<br>+ existsByFlowAndReviewer(int flowId, int reviewerId): boolean<br>+ findByRevieweeId(int revieweeId): List&lt;Review&gt;<br>+ avgScoreByRevieweeId(int revieweeId): double
+163 p2_ReviewDao_t :: 
+164 p2_CreditLogDao :: «interface» CreditLogDao
+165 p2_CreditLogDao_a :: 
+166 p2_CreditLogDao_m :: + insert(CreditLog log): int<br>+ findByUserId(int userId, int limit): List&lt;CreditLog&gt;
+167 p2_CreditLogDao_t :: 
+168 p2_OperationLogDao :: «interface» OperationLogDao
+169 p2_OperationLogDao_a :: 
+170 p2_OperationLogDao_m :: + insert(OperationLog log): int<br>+ findRecent(int limit): List&lt;OperationLog&gt;
+171 p2_OperationLogDao_t :: 
+172 p2_SystemConfigDao :: «interface» SystemConfigDao
+173 p2_SystemConfigDao_a :: 
+174 p2_SystemConfigDao_m :: + getValue(String key): String<br>+ getInt(String key, int defaultValue): int<br>+ getDouble(String key, double defaultValue): double<br>+ upsert(String key, String value, String description): int
+175 p2_SystemConfigDao_t :: 
+176 p2_UserService :: «interface» UserService
+177 p2_UserService_a :: 
+178 p2_UserService_m :: + register(String username, String rawPassword, String realName, String studentNo, String role, String college, String contact): User<br>+ login(String username, String rawPassword): LoginResult<br>+ changePassword(int userId, String oldPwd, String newPwd): void<br>+ findById(int userId): User<br>+ 
+179 p2_UserService_t :: 
+180 p2_ItemService :: «interface» ItemService
+181 p2_ItemService_a :: 
+182 p2_ItemService_m :: + publish(Item item, List&lt;String&gt; imagePaths): Item<br>+ updateItem(Item item, int operatorId): void<br>+ offShelf(int itemId, int operatorId): void<br>+ search(ItemQuery query): PageResult&lt;Item&gt;<br>+ detail(int itemId): Item<br>+ audit(int operatorId, int itemId, boolean pass, String re
+183 p2_ItemService_t :: 
+184 p2_FavoriteService :: «interface» FavoriteService
+185 p2_FavoriteService_a :: 
+186 p2_FavoriteService_m :: + toggle(int userId, int itemId): boolean<br>+ listByUser(int userId): List&lt;Item&gt;
+187 p2_FavoriteService_t :: 
+188 p2_TradeService :: «interface» TradeService
+189 p2_TradeService_a :: 
+190 p2_TradeService_m :: + apply(int itemId, int buyerId, String remark): TradeFlow<br>+ agree(int flowId, int operatorId): void<br>+ confirm(int flowId, int operatorId): void  // 跨表事务<br>+ cancel(int flowId, int operatorId, String reason): void<br>+ history(int userId, String status, int pageNo, int pageSize): List&lt;Trad
+191 p2_TradeService_t :: 
+192 p2_ReviewService :: «interface» ReviewService
+193 p2_ReviewService_a :: 
+194 p2_ReviewService_m :: + review(int flowId, int reviewerId, int score, String content): Review
+195 p2_ReviewService_t :: 
+196 p2_StatisticService :: «interface» StatisticService
+197 p2_StatisticService_a :: 
+198 p2_StatisticService_m :: + statisticsByCategory(LocalDateTime from, LocalDateTime to): List&lt;StatisticsDTO&gt;<br>+ carbonReduction(LocalDateTime from, LocalDateTime to): double<br>+ exportCsv(Path target, LocalDateTime from, LocalDateTime to): String
+199 p2_StatisticService_t :: 
+200 p2_AdminService :: «interface» AdminService
+201 p2_AdminService_a :: 
+202 p2_AdminService_m :: + addCategory(int operatorId, String name, Integer parentId): void<br>+ toggleCategory(int operatorId, int categoryId, boolean enabled): void<br>+ recentLogs(int limit): List&lt;OperationLog&gt;
+203 p2_AdminService_t :: 
+204 p2_DbUtil :: DbUtil  «singleton»
+205 p2_DbUtil_a :: - instance: DbUtil  {static}
+206 p2_DbUtil_m :: + getInstance(): DbUtil<br>+ getConnection(): Connection<br>+ beginTransaction(Connection c): void<br>+ commit(Connection c): void<br>+ rollback(Connection c): void<br>+ close(AutoCloseable...): void
+207 p2_DbUtil_t :: 
+208 p2_DaoFactory :: DaoFactory  «factory»
+209 p2_DaoFactory_a :: 
+210 p2_DaoFactory_m :: + createUserDao(): UserDao<br>+ createItemDao(): ItemDao<br>+ createTradeFlowDao(): TradeFlowDao<br>+ create...(): 其余 DAO 共 11 个
+211 p2_DaoFactory_t :: 
+212 p2_ServiceFactory :: ServiceFactory  «factory»
+213 p2_ServiceFactory_a :: 
+214 p2_ServiceFactory_m :: + createUserService(): UserService<br>+ createTradeService(): TradeService<br>+ create...(): 其余 Service 共 7 个
+215 p2_ServiceFactory_t :: 
+216 p2_PasswordUtil :: PasswordUtil
+217 p2_PasswordUtil_a :: - ITERATIONS: int = 100000<br>- KEY_LENGTH: int = 256
+218 p2_PasswordUtil_m :: + generateSalt(): String  // 16 字节 Base64<br>+ hash(String rawPassword, String salt): String<br>+ verify(String rawPassword, String salt, String hash): boolean
+219 p2_PasswordUtil_t :: 
+220 p2_Validator :: Validator
+221 p2_Validator_a :: 
+222 p2_Validator_m :: + validateUsername(String u): void<br>+ validatePassword(String p): void<br>+ validateStudentNo(String no): void<br>+ validateItem(Item item): void
+223 p2_Validator_t :: 
+224 p2_ConfigManager :: ConfigManager  «singleton»
+225 p2_ConfigManager_a :: 
+226 p2_ConfigManager_m :: + getInstance(): ConfigManager<br>+ getString(String key): String<br>+ getInt(String key, int def): int<br>+ getDouble(String key, double def): double
+227 p2_ConfigManager_t :: 
+228 p2_AbstractJdbcDao :: AbstractJdbcDao&lt;T, ID&gt;  {abstract}
+229 p2_AbstractJdbcDao_a :: # conn: Connection
+230 p2_AbstractJdbcDao_m :: + executeInTransaction(Callable&lt;T&gt; work): T  // 模板方法<br># queryList(String sql, RowMapper&lt;T&gt; m, Object... args): List&lt;T&gt;<br># queryOne(String sql, RowMapper&lt;T&gt; m, Object... args): Optional&lt;T&gt;<br># update(String sql, Object... args): int
+231 p2_AbstractJdbcDao_t :: 
+232 p2_AbstractCsvExporter :: AbstractCsvExporter  {abstract}
+233 p2_AbstractCsvExporter_a :: 
+234 p2_AbstractCsvExporter_m :: + export(Path target, List&lt;String&gt; header, List&lt;String[]&gt; rows): String  // 模板方法<br># writeHeader(Writer w, List&lt;String&gt; header): void<br># writeRow(Writer w, String[] row): void
+235 p2_AbstractCsvExporter_t :: 
+236 p2_CsvExporter :: CsvExporter
+237 p2_CsvExporter_a :: 
+238 p2_CsvExporter_m :: # writeHeader(Writer w, List&lt;String&gt; header): void<br># writeRow(Writer w, String[] row): void
+239 p2_CsvExporter_t :: 
+240 p2_UserDaoImpl :: UserDaoImpl
+241 p2_UserDaoImpl_a :: 
+242 p2_UserDaoImpl_m :: + findById(Integer id): Optional&lt;User&gt;<br>+ findAll(): List&lt;User&gt;<br>+ insert(User e): int<br>+ update(User e): int<br>+ deleteById(Integer id): int<br>+ findByUsername(String username): Optional&lt;User&gt;<br>+ existsByUsername(String u): boolean<br>+ existsByStudentNo(String no): bool
+243 p2_UserDaoImpl_t :: 
+244 p2_ItemDaoImpl :: ItemDaoImpl
+245 p2_ItemDaoImpl_a :: 
+246 p2_ItemDaoImpl_m :: + findById(Integer id): Optional&lt;Item&gt;<br>+ findAll(): List&lt;Item&gt;<br>+ insert(Item item): int  // 回填主键<br>+ update(Item e): int<br>+ deleteById(Integer id): int<br>+ search(ItemQuery q): List&lt;Item&gt;<br>+ countSearch(ItemQuery q): int<br>+ updateStatus(int itemId, String status, Stri
+247 p2_ItemDaoImpl_t :: 
+248 p2_TradeFlowDaoImpl :: TradeFlowDaoImpl
+249 p2_TradeFlowDaoImpl_a :: 
+250 p2_TradeFlowDaoImpl_m :: + insert(TradeFlow f): int  // 回填主键<br>+ findActiveByItemId(int itemId): Optional&lt;TradeFlow&gt;<br>+ findById(int id): Optional&lt;TradeFlow&gt;<br>+ updateStatus(int flowId, String st, String reason, LocalDateTime fin): int<br>+ findByUserId(int uid, String st, int p, int s): List&lt;TradeFlow&g
+251 p2_TradeFlowDaoImpl_t :: 
+252 p2_UserServiceImpl :: UserServiceImpl
+253 p2_UserServiceImpl_a :: 
+254 p2_UserServiceImpl_m :: + register(...): User  // 事务 + PBKDF2<br>+ login(...): LoginResult  // 失败计数/锁定<br>+ changePassword(int uid, String o, String n): void<br>+ findById(int uid): User<br>+ queryUsers(...): List&lt;User&gt;<br>+ freezeUser(int op, int uid): void<br>+ unfreezeUser(int op, int uid): void<br>+ updateCredit(
+255 p2_UserServiceImpl_t :: 
+256 p2_ItemServiceImpl :: ItemServiceImpl
+257 p2_ItemServiceImpl_a :: 
+258 p2_ItemServiceImpl_m :: + publish(Item item, List&lt;String&gt; paths): Item  // 事务<br>+ updateItem(Item item, int op): void<br>+ offShelf(int itemId, int op): void<br>+ search(ItemQuery q): PageResult&lt;Item&gt;  // 策略排序<br>+ detail(int itemId): Item<br>+ audit(int op, int itemId, boolean pass, String remark): void
+259 p2_ItemServiceImpl_t :: 
+260 p2_FavoriteServiceImpl :: FavoriteServiceImpl
+261 p2_FavoriteServiceImpl_a :: 
+262 p2_FavoriteServiceImpl_m :: + toggle(int userId, int itemId): boolean  // 事务<br>+ listByUser(int userId): List&lt;Item&gt;
+263 p2_FavoriteServiceImpl_t :: 
+264 p2_TradeServiceImpl :: TradeServiceImpl
+265 p2_TradeServiceImpl_a :: 
+266 p2_TradeServiceImpl_m :: + apply(int itemId, int buyerId, String remark): TradeFlow<br>+ agree(int flowId, int op): void<br>+ confirm(int flowId, int op): void  // 跨表事务 BEGIN IMMEDIATE<br>+ cancel(int flowId, int op, String reason): void<br>+ history(int uid, String st, int p, int s): List&lt;TradeFlow&gt;
+267 p2_TradeServiceImpl_t :: 
+268 p2_ReviewServiceImpl :: ReviewServiceImpl
+269 p2_ReviewServiceImpl_a :: 
+270 p2_ReviewServiceImpl_m :: + review(int flowId, int reviewerId, int score, String content): Review  // 事务
+271 p2_ReviewServiceImpl_t :: 
+272 p2_StatisticServiceImpl :: StatisticServiceImpl
+273 p2_StatisticServiceImpl_a :: 
+274 p2_StatisticServiceImpl_m :: + statisticsByCategory(LocalDateTime f, LocalDateTime t): List&lt;StatisticsDTO&gt;<br>+ carbonReduction(LocalDateTime f, LocalDateTime t): double<br>+ exportCsv(Path target, LocalDateTime f, LocalDateTime t): String
+275 p2_StatisticServiceImpl_t :: 
+276 p2_AdminServiceImpl :: AdminServiceImpl
+277 p2_AdminServiceImpl_a :: 
+278 p2_AdminServiceImpl_m :: + addCategory(int op, String name, Integer parentId): void<br>+ toggleCategory(int op, int categoryId, boolean enabled): void<br>+ recentLogs(int limit): List&lt;OperationLog&gt;
+279 p2_AdminServiceImpl_t :: 
