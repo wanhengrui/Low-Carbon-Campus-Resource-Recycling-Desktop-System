@@ -25,7 +25,26 @@
 
 ---
 
-## 二、快速开始（三种方式，任选一种）
+## 二、组员快速上手（第一次克隆）
+
+```bash
+# 1) 克隆（国内网络若报 Connection was reset，用下一行带代理的版本）
+git clone https://github.com/wanhengrui/Low-Carbon-Campus-Resource-Recycling-Desktop-System.git
+git -c http.proxy=http://127.0.0.1:7897 clone https://github.com/wanhengrui/Low-Carbon-Campus-Resource-Recycling-Desktop-System.git
+
+# 2) 进入仓库，先读交付总入口
+cd Low-Carbon-Campus-Resource-Recycling-Desktop-System/迭代一-成员1
+#    打开 README-交付说明.md（阅读顺序：D0 → D2 → D3/D4 → D5 → D1 → D6）
+
+# 3) 跑一遍演示，确认环境没问题
+cd code/green-campus && start.bat
+```
+
+> 首次使用前请组内先确认：①仓库 Settings → Collaborators 已把成员2/3 加进来（否则无法 push）；②各自 `git config user.name` / `user.email` 已设置为本人；③**动手前先看 [_共享契约-实体与接口基线.md](迭代一-成员1/_共享契约-实体与接口基线.md)**，那是全组唯一口径。
+
+---
+
+## 三、快速开始（三种方式，任选一种）
 
 **① 双击运行（推荐给组员/答辩现场）**
 
@@ -59,7 +78,7 @@ java -cp "build/classes;src/main/resources;lib/sqlite-jdbc-3.42.0.0.jar" edu.cam
 
 ---
 
-## 三、迭代一交付物索引
+## 四、迭代一交付物索引
 
 | 编号 | 交付物 | 内容要点 | 负责人 |
 |---|---|---|---|
@@ -77,7 +96,7 @@ java -cp "build/classes;src/main/resources;lib/sqlite-jdbc-3.42.0.0.jar" edu.cam
 
 ---
 
-## 四、组内协作约定（迭代二起执行）
+## 五、组内协作约定（迭代二起执行）
 
 - **唯一口径**：任何字段、接口签名、业务规则以 [`_共享契约-实体与接口基线.md`](迭代一-成员1/_共享契约-实体与接口基线.md) 为准；文档之间冲突时以契约为准并提 issue 更正。
 - **分支模型**：`main` 保持可编译可运行；成员2 用 `feature/service-test`、成员3 用 `feature/ui`，合并前必须本地 `mvn test` 通过 + 一次代码走查。
@@ -87,7 +106,7 @@ java -cp "build/classes;src/main/resources;lib/sqlite-jdbc-3.42.0.0.jar" edu.cam
 
 ---
 
-## 五、网络提示（仅对国内网络环境）
+## 六、网络提示（仅对国内网络环境）
 
 若 `git push` 报 `Recv failure: Connection was reset`，说明直连 GitHub 不通，请临时走本地代理：
 
