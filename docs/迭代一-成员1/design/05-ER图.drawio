@@ -1,0 +1,567 @@
+<mxfile host="65bd71144e">
+    <diagram id="er" name="ER图">
+        <mxGraphModel dx="3532" dy="5492" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1450" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#1f3864;" value="低碳校园资源循环流转系统（GreenCampus Recycle）—— 实体关系图（ER 图）· 11 个实体 / 18 条关系" vertex="1">
+                    <mxGeometry height="40" width="1200" x="40" y="-1150" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" parent="1" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#444444;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;spacingLeft=8;spacingTop=6;" value="图例：字段行格式为“字段名 : 类型 [约束]”；[PK] 为主键；[FK→表.字段] 为外键；[UQ] 为唯一约束。关系线为鸦爪（crow&#39;s foot）表示法：源端 1（ERone）、目标端 N/0..N（ERmany），连线两端锚定具体字段。trade_flow.item_id 上的部分唯一索引 uq_flow_item_active 保证同一物品最多一条进行中流转；第 3 轮（契约 v1.1）起 item.status 默认 PENDING，且 item 表级约束 ck_item_free_price 要求 trade_type=FREE 时 price 必须为 0（Service + DB 双层校验）。" vertex="1">
+                    <mxGeometry height="120" width="1560" x="85" y="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_user" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="user 用户" vertex="1">
+                    <mxGeometry height="414" width="340" x="700" y="-1070" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_id" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_username" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="username : TEXT  [NOT NULL UQ]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_password_hash" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="password_hash : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_salt" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="salt : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_real_name" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="real_name : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_student_no" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="student_no : TEXT  [UQ]" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_role" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="role : TEXT  [NOT NULL DEFAULT STUDENT]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_college" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="college : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_contact" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="contact : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="222" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_credit_score" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="credit_score : INTEGER  [NOT NULL DEFAULT 100]" vertex="1">
+                    <mxGeometry height="24" width="340" y="246" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_status" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="status : TEXT  [NOT NULL DEFAULT ACTIVE]" vertex="1">
+                    <mxGeometry height="24" width="340" y="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_fail_count" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="fail_count : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="294" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_locked_until" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="locked_until : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="318" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_created_at" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="342" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_updated_at" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="updated_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="366" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_user_last_login_at" parent="e_user" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="last_login_at : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="390" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_category" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="category 分类" vertex="1">
+                    <mxGeometry height="174" width="330" x="300" y="-1070" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_id" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="330" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_name" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="name : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_parent_id" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="parent_id : INTEGER  [FK→category.id]" vertex="1">
+                    <mxGeometry height="24" width="330" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_sort_order" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="sort_order : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="330" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_enabled" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="enabled : INTEGER  [NOT NULL DEFAULT 1]" vertex="1">
+                    <mxGeometry height="24" width="330" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_category_created_at" parent="e_category" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_item" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="item 闲置物品" vertex="1">
+                    <mxGeometry height="438" width="340" x="700" y="-550" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_id" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_owner_id" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="owner_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_category_id" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="category_id : INTEGER  [NOT NULL FK→category.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_title" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="title : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_description" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="description : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_trade_type" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="trade_type : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_price" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="price : REAL  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_original_price" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="original_price : REAL" vertex="1">
+                    <mxGeometry height="24" width="340" y="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_condition_level" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="condition_level : INTEGER  [NOT NULL DEFAULT 9]" vertex="1">
+                    <mxGeometry height="24" width="340" y="222" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_tags" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="tags : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="246" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_status" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="status : TEXT  [NOT NULL DEFAULT PENDING]" vertex="1">
+                    <mxGeometry height="24" width="340" y="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_view_count" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="view_count : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="294" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_favorite_count" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="favorite_count : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="318" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_audit_remark" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="audit_remark : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="342" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_created_at" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="366" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_updated_at" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="updated_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="390" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_published_at" parent="e_item" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="published_at : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="414" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_item_image" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="item_image 物品图片" vertex="1">
+                    <mxGeometry height="150" width="330" x="300" y="-830" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_image_id" parent="e_item_image" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="330" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_image_item_id" parent="e_item_image" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="item_id : INTEGER  [NOT NULL FK→item.id]" vertex="1">
+                    <mxGeometry height="24" width="330" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_image_file_path" parent="e_item_image" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="file_path : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_image_sort_order" parent="e_item_image" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="sort_order : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="330" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_item_image_created_at" parent="e_item_image" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_favorite" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="favorite 收藏" vertex="1">
+                    <mxGeometry height="126" width="330" x="1120" y="-800" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_favorite_id" parent="e_favorite" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="330" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_favorite_user_id" parent="e_favorite" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="user_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="330" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_favorite_item_id" parent="e_favorite" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="item_id : INTEGER  [NOT NULL FK→item.id]" vertex="1">
+                    <mxGeometry height="24" width="330" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_favorite_created_at" parent="e_favorite" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_trade_message" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="trade_message 流转沟通消息" vertex="1">
+                    <mxGeometry height="198" width="340" x="1120" y="-1070" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_id" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_item_id" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="item_id : INTEGER  [NOT NULL FK→item.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_from_user_id" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="from_user_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_to_user_id" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="to_user_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_content" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="content : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_is_read" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="is_read : INTEGER  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_message_created_at" parent="e_trade_message" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_trade_flow" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="trade_flow 流转记录" vertex="1">
+                    <mxGeometry height="294" width="340" x="1120" y="-610" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_id" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_item_id" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="item_id : INTEGER  [NOT NULL FK→item.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_seller_id" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="seller_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_buyer_id" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="buyer_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_flow_type" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="flow_type : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_amount" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="amount : REAL  [NOT NULL DEFAULT 0]" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_status" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="status : TEXT  [NOT NULL DEFAULT APPLYING]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_apply_remark" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="apply_remark : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_cancel_reason" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="cancel_reason : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="222" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_created_at" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="246" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_trade_flow_finished_at" parent="e_trade_flow" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="finished_at : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_review" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="review 评价" vertex="1">
+                    <mxGeometry height="198" width="340" x="1120" y="-210" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_id" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_flow_id" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="flow_id : INTEGER  [NOT NULL FK→trade_flow.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_reviewer_id" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="reviewer_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_reviewee_id" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="reviewee_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_score" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="score : INTEGER  [NOT NULL CHECK 1-5]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_content" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="content : TEXT" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_review_created_at" parent="e_review" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_credit_log" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="credit_log 信用分流水" vertex="1">
+                    <mxGeometry height="198" width="340" x="1530" y="-830" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_id" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="340" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_user_id" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="user_id : INTEGER  [NOT NULL FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_flow_id" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="flow_id : INTEGER  [FK→trade_flow.id]" vertex="1">
+                    <mxGeometry height="24" width="340" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_delta" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="delta : INTEGER  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_score_after" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="score_after : INTEGER  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_reason" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="reason : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_credit_log_created_at" parent="e_credit_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="340" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_operation_log" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="operation_log 关键操作日志" vertex="1">
+                    <mxGeometry height="222" width="330" x="300" y="-430" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_id" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="330" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_operator_id" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontColor=#0b5394;" value="operator_id : INTEGER  [FK→user.id]" vertex="1">
+                    <mxGeometry height="24" width="330" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_operation" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="operation : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_target_type" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="target_type : TEXT" vertex="1">
+                    <mxGeometry height="24" width="330" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_target_id" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="target_id : INTEGER" vertex="1">
+                    <mxGeometry height="24" width="330" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_detail" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="detail : TEXT" vertex="1">
+                    <mxGeometry height="24" width="330" y="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_ip" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="ip : TEXT" vertex="1">
+                    <mxGeometry height="24" width="330" y="174" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_operation_log_created_at" parent="e_operation_log" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="created_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="198" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_system_config" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;swimlaneFillColor=#ffffff;fontColor=#1f3864;" value="system_config 系统配置" vertex="1">
+                    <mxGeometry height="150" width="330" x="700" y="-60" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_system_config_id" parent="e_system_config" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;fontStyle=1;fontColor=#933333;" value="id : INTEGER  [PK]" vertex="1">
+                    <mxGeometry height="24" width="330" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_system_config_config_key" parent="e_system_config" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="config_key : TEXT  [NOT NULL UQ]" vertex="1">
+                    <mxGeometry height="24" width="330" y="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_system_config_config_value" parent="e_system_config" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="config_value : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="78" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_system_config_description" parent="e_system_config" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="description : TEXT" vertex="1">
+                    <mxGeometry height="24" width="330" y="102" as="geometry"/>
+                </mxCell>
+                <mxCell id="f_system_config_updated_at" parent="e_system_config" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=11;fontColor=#333333;" value="updated_at : TEXT  [NOT NULL]" vertex="1">
+                    <mxGeometry height="24" width="330" y="126" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_item" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_item_owner_id" value="发布">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_item_s" connectable="0" parent="r_user_item" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_item_t" connectable="0" parent="r_user_item" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_category_item" edge="1" parent="1" source="f_category_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_item_category_id" value="归属">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_category_item_s" connectable="0" parent="r_category_item" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_category_item_t" connectable="0" parent="r_category_item" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_category_self" edge="1" parent="1" source="f_category_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0;exitY=0.2;entryX=0;entryY=0.8;" target="f_category_parent_id" value="父分类(自关联)">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="250" y="-1010"/>
+                            <mxPoint x="250" y="-880"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_category_self_s" connectable="0" parent="r_category_self" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_category_self_t" connectable="0" parent="r_category_self" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_image" edge="1" parent="1" source="f_item_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" target="f_item_image_item_id" value="附图">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_item_image_s" connectable="0" parent="r_item_image" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_image_t" connectable="0" parent="r_item_image" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_favorite" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_favorite_user_id" value="收藏">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_favorite_s" connectable="0" parent="r_user_favorite" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_favorite_t" connectable="0" parent="r_user_favorite" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_favorite" edge="1" parent="1" source="f_item_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_favorite_item_id" value="被收藏">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_item_favorite_s" connectable="0" parent="r_item_favorite" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_favorite_t" connectable="0" parent="r_item_favorite" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_message" edge="1" parent="1" source="f_item_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_message_item_id" value="关联物品">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_item_message_s" connectable="0" parent="r_item_message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_message_t" connectable="0" parent="r_item_message" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_msg_from" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_message_from_user_id" value="发送">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_msg_from_s" connectable="0" parent="r_user_msg_from" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_msg_from_t" connectable="0" parent="r_user_msg_from" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_msg_to" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_message_to_user_id" value="接收">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_msg_to_s" connectable="0" parent="r_user_msg_to" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_msg_to_t" connectable="0" parent="r_user_msg_to" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_flow" edge="1" parent="1" source="f_item_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_flow_item_id" value="流转物品">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_item_flow_s" connectable="0" parent="r_item_flow" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_item_flow_t" connectable="0" parent="r_item_flow" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_flow_seller" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_flow_seller_id" value="出让">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_flow_seller_s" connectable="0" parent="r_user_flow_seller" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_flow_seller_t" connectable="0" parent="r_user_flow_seller" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_flow_buyer" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_trade_flow_buyer_id" value="受让">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_flow_buyer_s" connectable="0" parent="r_user_flow_buyer" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_flow_buyer_t" connectable="0" parent="r_user_flow_buyer" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_flow_review" edge="1" parent="1" source="f_trade_flow_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="f_review_flow_id" value="产生评价">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_flow_review_s" connectable="0" parent="r_flow_review" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_flow_review_t" connectable="0" parent="r_flow_review" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_reviewer" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_review_reviewer_id" value="评价人">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_reviewer_s" connectable="0" parent="r_user_reviewer" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_reviewer_t" connectable="0" parent="r_user_reviewer" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_reviewee" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_review_reviewee_id" value="被评价人">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_reviewee_s" connectable="0" parent="r_user_reviewee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_reviewee_t" connectable="0" parent="r_user_reviewee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_credit" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;" target="f_credit_log_user_id" value="信用流水">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_credit_s" connectable="0" parent="r_user_credit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_credit_t" connectable="0" parent="r_user_credit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_flow_credit" edge="1" parent="1" source="f_trade_flow_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="f_credit_log_flow_id" value="关联流转">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_flow_credit_s" connectable="0" parent="r_flow_credit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_flow_credit_t" connectable="0" parent="r_flow_credit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="0..N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_oplog" edge="1" parent="1" source="f_user_id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;startFill=0;endFill=0;strokeColor=#666666;strokeWidth=1;fontSize=10;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" target="f_operation_log_operator_id" value="操作记录">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="r_user_oplog_s" connectable="0" parent="r_user_oplog" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="1" vertex="1">
+                    <mxGeometry relative="1" x="-0.85" as="geometry">
+                        <mxPoint x="-8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="r_user_oplog_t" connectable="0" parent="r_user_oplog" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;labelBackgroundColor=#ffffff;" value="0..N" vertex="1">
+                    <mxGeometry relative="1" x="0.85" as="geometry">
+                        <mxPoint x="8" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

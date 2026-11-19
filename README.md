@@ -1,117 +1,91 @@
 # 低碳校园资源循环流转桌面系统（GreenCampus Recycle）
 
-> 《软件构造》课程分组实验（3 人组 · 8 周 4 迭代）· Java 17 + Maven + SQLite/JDBC + Swing + JUnit 5
+《软件构造》课程分组实验，3人小组、8周4个迭代。技术栈：Java 17、Maven、SQLite/JDBC、Swing、JUnit 5。
 
-面向校园的二手闲置物品流转桌面应用：**发布 → 检索收藏 → 意向沟通 → 流转成交 → 互评与信用分 → 数据统计与低碳减排估算**，管理员负责用户与物品审核。当前进度：**迭代一（第 1–2 周，需求与设计）已交付**。
+面向校园的闲置物品流转桌面应用，覆盖发布、检索收藏、意向沟通、流转成交、互评与信用分、统计与CSV导出。当前处于迭代一，成员1已交付设计与参考实现，成员2已完成业务规则核对、测试基线与走查。Swing GUI由成员3继续开发。
 
----
+## 仓库结构
 
-## 一、仓库结构
-
-```
-软件构造/
-├─ 2026软件构造分组实验v3.docx      # 题目书（老师原始要求，唯一需求来源）
-├─ README.md                        # 本文件
+```text
+Low-Carbon-Campus-Resource-Recycling-Desktop-System/
+├─ README.md
 ├─ .gitignore
-└─ 迭代一-成员1/                    # 迭代一交付物（成员1：系统设计与数据层）
-   ├─ README-交付说明.md            # ★ 交付总入口：阅读顺序 / 验证命令 / 待确认项
-   ├─ _共享契约-实体与接口基线.md   # ★ 全组唯一口径：11 张表字段、接口签名、BR、异常、裁决记录
-   ├─ docs/                         # 00 能力自检与编排方案｜01 需求规格｜02 模块化设计与接口规范｜05 数据库设计｜06 分工与迭代计划
-   ├─ design/                       # 03 UML 类图｜04 UML 时序图｜05 ER 图（均为 .drawio，可继续编辑）
-   ├─ db/                           # schema.sql｜seed-data.sql｜_verify/（验证库与实测输出）
-   ├─ code/green-campus/            # Maven 工程骨架（12 包 109 个源文件，可编译可运行）
-   └─ _tools/                       # 交付自检与交叉校验脚本、第 3 轮修复裁决清单
+├─ .agentic/
+│  └─ 迭代一-成员1-提示词.md       # 历史工作提示词
+├─ green-campus/                 # Maven工程，所有构建和Java运行命令在此执行
+│  ├─ pom.xml
+│  ├─ start.bat
+│  ├─ 部署说明.md
+│  ├─ lib/                       # 已提供的离线SQLite JDBC驱动
+│  ├─ src/main/                  # Java源码与运行配置
+│  ├─ src/test/                  # JUnit测试
+│  └─ data/                      # 运行生成的数据库、图片与导出文件
+├─ db/
+│  ├─ schema.sql
+│  ├─ seed-data.sql
+│  ├─ verify_db.py
+│  └─ _verify/                   # 数据库验证目录
+└─ docs/
+   ├─ 2026软件构造分组实验v3.docx # 老师原始实验要求
+   ├─ 迭代一-成员1/              # 需求、接口基线、UML、数据库设计及校验工具
+   └─ 迭代一-成员2/              # 规则核对、测试计划、代码走查及实测记录
 ```
 
----
+目录迁移后，Java工程和SQL脚本已独立置于仓库根目录。成员1历史文档中的旧路径及原电脑环境记录保留供追溯，当前运行方式以本文件和[部署说明](green-campus/部署说明.md)为准。历史提示词仅用于了解当时的工作过程。
 
-## 二、组员快速上手（第一次克隆）
+## 阅读入口
 
-```bash
-# 1) 克隆（国内网络若报 Connection was reset，用下一行带代理的版本）
-git clone https://github.com/wanhengrui/Low-Carbon-Campus-Resource-Recycling-Desktop-System.git
-git -c http.proxy=http://127.0.0.1:7897 clone https://github.com/wanhengrui/Low-Carbon-Campus-Resource-Recycling-Desktop-System.git
+- [实验要求](docs/2026软件构造分组实验v3.docx)
+- [成员1交付说明与历史验证记录](docs/迭代一-成员1/README-交付说明.md)
+- [成员2交付说明与验证记录](docs/迭代一-成员2/README-交付说明.md)
+- [共享契约](docs/迭代一-成员1/_共享契约-实体与接口基线.md)：字段、接口、异常和业务规则基线；阅读时结合第13节最新裁决。
+- [需求规格](docs/迭代一-成员1/docs/01-需求规格说明书.docx)
+- [模块与接口规范](docs/迭代一-成员1/docs/02-模块化设计与接口规范.docx)
+- [数据库设计](docs/迭代一-成员1/docs/05-数据库设计说明书.docx)
+- [分工与迭代计划](docs/迭代一-成员1/docs/06-小组分工与两周迭代计划.docx)
+- [UML及ER图目录](docs/迭代一-成员1/design)
 
-# 2) 进入仓库，先读交付总入口
-cd Low-Carbon-Campus-Resource-Recycling-Desktop-System/迭代一-成员1
-#    打开 README-交付说明.md（阅读顺序：D0 → D2 → D3/D4 → D5 → D1 → D6）
+## 构建与运行
 
-# 3) 跑一遍演示，确认环境没问题
-cd code/green-campus && start.bat
-```
+安装JDK 17及以上；Maven构建需要Maven 3.8及以上。以下命令从仓库根目录开始：
 
-> 首次使用前请组内先确认：①仓库 Settings → Collaborators 已把成员2/3 加进来（否则无法 push）；②各自 `git config user.name` / `user.email` 已设置为本人；③**动手前先看 [_共享契约-实体与接口基线.md](迭代一-成员1/_共享契约-实体与接口基线.md)**，那是全组唯一口径。
-
----
-
-## 三、快速开始（三种方式，任选一种）
-
-**① 双击运行（推荐给组员/答辩现场）**
-
-```bat
-cd 迭代一-成员1\code\green-campus
-start.bat
-```
-
-`start.bat` 会自动三级回退：已有 `target/*.jar` → 直接 `java -jar`；有 Maven → `mvn -q -DskipTests package` 后运行；两者都没有 → 用 `lib/sqlite-jdbc-3.42.0.0.jar` 走 `javac` 离线编译再运行。会打印 9 步演示流程（注册 → 登录 → 发布 → 检索 → 意向 → 成交 → 评价 → 统计 → CSV 导出）。
-
-**② Maven 方式**
-
-```bash
-mvn -q -DskipTests package
-java -jar target/green-campus-1.0.0.jar
+```powershell
+cd green-campus
 mvn test
+mvn package
+java -jar target/green-campus-1.0.0.jar
 ```
 
-**③ 手工编译（无 Maven 环境）**
+Windows也可双击 `green-campus/start.bat`。脚本依次尝试已有Jar、Maven构建、javac离线编译；脚本的构建分支会跳过测试，测试需单独执行。当前入口为 `edu.campus.recycle.Main` 控制台演示，Swing入口仍待成员3实现。
 
-```bash
-javac --release 17 -encoding UTF-8 -sourcepath src/main/java -d build/classes \
-      -cp "lib/sqlite-jdbc-3.42.0.0.jar" src/main/java/edu/campus/recycle/Main.java
+离线编译与运行（同样在 `green-campus` 目录执行）：
+
+```powershell
+javac --release 17 -encoding UTF-8 -sourcepath src/main/java -d build/classes -cp "lib/sqlite-jdbc-3.42.0.0.jar" src/main/java/edu/campus/recycle/Main.java
 java -cp "build/classes;src/main/resources;lib/sqlite-jdbc-3.42.0.0.jar" edu.campus.recycle.Main
 ```
 
-> ⚠️ **两个必须注意的点**（否则会报"建库脚本不存在"或读不到配置）：
-> 1. 工作目录必须是 `code/green-campus`（`DbConfig` 默认按 `../../db/schema.sql` 找建库脚本）；
-> 2. classpath 必须包含 `src/main/resources`（否则 `application.properties` 被静默跳过，改用内置默认值）。
-> 详细说明见 [`迭代一-成员1/code/green-campus/部署说明.md`](迭代一-成员1/code/green-campus/部署说明.md)。
+运行工作目录必须是 `green-campus`，配置与默认值均通过 `../db/schema.sql`、`../db/seed-data.sql` 查找脚本。手工运行时将 `src/main/resources` 加入 classpath。当前 Main 每次启动会重建 `green-campus/data/greencampus.db`，演示请使用独立副本。
 
----
+## 交付物校验
 
-## 四、迭代一交付物索引
+需要Python 3和 `python-docx`；默认Python缺少依赖时，先执行 `python -m pip install python-docx`，或使用已含该依赖的Python环境。下列命令从仓库根目录执行，两个脚本通过自身位置定位文件，也可从其他目录用其完整路径调用：
 
-| 编号 | 交付物 | 内容要点 | 负责人 |
-|---|---|---|---|
-| D0 | `docs/00-能力自检与编排方案.docx` | 本机工具链实测、编排与多模型分工、三轮生成–自检–修复记录 | 成员1 |
-| D1 | `docs/01-需求规格说明书.docx` | FR-01…17、NFR-01…10、BR-01…12、UC-01…08、权限矩阵、错误码总表 | 成员1 |
-| D2 | `docs/02-模块化设计与接口规范.docx` | 分层架构、12 包、**22 接口 92 方法**签名、5 处设计模式落点、成员2/3 开工契约 | 成员1 |
-| D3 | `design/03-UML类图.drawio` | 实体/DAO/Service/工具/异常全量类图，412 mxCell、312 顶点、96 条关系 | 成员1 |
-| D4 | `design/04-UML时序图.drawio` | 6 个核心场景，含 alt/loop 与事务回滚分支 | 成员1 |
-| D5 | `docs/05-数据库设计说明书.docx` + `design/05-ER图.drawio` + `db/schema.sql` + `db/seed-data.sql` | 11 表 93 列 13 索引 18 外键、事务边界、可实跑建库脚本 | 成员1 |
-| D6 | `docs/06-小组分工与两周迭代计划.docx` | 三人分工、14 天排期、迭代二交接、Git 约定、风险应对 | 成员1（含成员2/3 建议分工） |
-| D7 | `code/green-campus/` | Maven 骨架 + 可跑 Main（控制台版，Swing 留给成员3） | 成员1（骨架） |
-| D8 | `README-交付说明.md` + `_tools/` | 一致性交叉校验、20 项自动化验收、第 3 轮 v4-pro 评审修复记录 | 成员1 |
-
-**已实测**：`javac --release 17` 107 文件 0 错误 · JUnit 11/11 通过 · `Main` 9/9 步跑通 · `schema.sql` 11 表实跑 `integrity_check=ok`、`foreign_key_check` 无违规 · 12/12 非法数据被库层拒绝 · 双击 `start.bat` 同样跑通。
-
----
-
-## 五、组内协作约定（迭代二起执行）
-
-- **唯一口径**：任何字段、接口签名、业务规则以 [`_共享契约-实体与接口基线.md`](迭代一-成员1/_共享契约-实体与接口基线.md) 为准；文档之间冲突时以契约为准并提 issue 更正。
-- **分支模型**：`main` 保持可编译可运行；成员2 用 `feature/service-test`、成员3 用 `feature/ui`，合并前必须本地 `mvn test` 通过 + 一次代码走查。
-- **提交信息**：`<类型>(<范围>): <说明>`，例如 `feat(service): 实现 TradeService.confirm 跨表事务`、`docs(iter1): 补充 D2 接口清单`。
-- **不要提交**：`target/`、`build/`、`*.class`、`__pycache__/`、IDE 配置、运行生成的 `*.db`（`.gitignore` 已覆盖）。
-- **依赖 jar**：`code/green-campus/lib/sqlite-jdbc-3.42.0.0.jar` 已入库，保证无 Maven 环境也能一键运行，请勿删除。
-
----
-
-## 六、网络提示（仅对国内网络环境）
-
-若 `git push` 报 `Recv failure: Connection was reset`，说明直连 GitHub 不通，请临时走本地代理：
-
-```bash
-git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push -u origin main
+```powershell
+python docs/迭代一-成员1/_tools/verify_all.py
+python docs/迭代一-成员1/_tools/cross_check.py
 ```
 
-（代理地址按自己实际情况替换；本机 Clash 默认 `127.0.0.1:7897`。）
+- `verify_all.py`：检查Word结构、draw.io XML、临时数据库建库与种子导入、Java目录结构；有失败项返回非零退出码。
+- `cross_check.py`：核对表、实体、类图字段、DTO字段和接口名称，更新同目录 `cross_check.txt`。应查看报告中的差异；它不验证完整方法签名或业务行为，也不以退出码表示所有一致性结果。
+- 更详细的数据库反例验证可执行 `python db/verify_db.py`，会更新 `db/_verify/` 验证库和 `db/_verify-output.txt`。
+
+2026-11-09目录迁移复核：全量校验20项通过；交叉报告显示11张表字段一致、6个DTO字段一致、接口名称无缺漏。本次未重新运行Java编译、JUnit或Main演示。成员1原环境的11条JUnit及演示结果见历史交付说明，不能替代当前环境的业务验收。
+
+## 协作约定
+
+- 成员1负责设计与数据层，成员2负责业务逻辑与测试，成员3负责GUI与构建交付；每个人都需参与编码和测试。
+- 字段、接口或业务规则调整需同步契约、调用方及测试；组内分支和评审约定见分工文档。当前成员2工作分支为 `feature/service-test`。
+- 提交格式：`<类型>(<范围>): <说明>`，如 `test(trade): 补充成交事务回滚测试`。
+- 构建目录、class文件、运行数据库、CSV导出和Python缓存不入库；`db/_verify/greencampus.db` 为原有验证样本，保留。离线驱动 `green-campus/lib/sqlite-jdbc-3.42.0.0.jar` 随仓库提供。
+- 提交前运行相关测试并检查 `git diff`。重排目录后的移动、新增及删除文件需一并检查，避免漏交。
